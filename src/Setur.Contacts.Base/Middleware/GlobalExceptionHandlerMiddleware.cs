@@ -7,6 +7,9 @@ using Setur.Contacts.Base.Results;
 
 namespace Setur.Contacts.Base.Middleware;
 
+/// <summary>
+/// Bu Middleware, uygulama genelinde meydana gelen hatalarý yakalar ve <see cref="ErrorResponse"/> paternine uygun HTTP yanýtlarýný döner.
+/// </summary>
 public class GlobalExceptionHandlerMiddleware
 {
     private readonly RequestDelegate _next;

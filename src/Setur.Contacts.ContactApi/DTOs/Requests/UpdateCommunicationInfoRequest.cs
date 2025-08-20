@@ -3,10 +3,10 @@ using Setur.Contacts.Domain.Enums;
 
 namespace Setur.Contacts.ContactApi.DTOs.Requests;
 
-public class CreateCommunicationInfoRequest
+public class UpdateCommunicationInfoRequest
 {
-    [Required(ErrorMessage = "Kişi ID'si zorunludur")]
-    public Guid ContactId { get; set; }
+    [Required(ErrorMessage = "ID alanı zorunludur")]
+    public Guid Id { get; set; }
 
     [Required(ErrorMessage = "İletişim tipi zorunludur")]
     public CommunicationType Type { get; set; }

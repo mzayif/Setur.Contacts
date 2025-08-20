@@ -1,11 +1,10 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Setur.Contacts.ContactApi.DTOs.Requests
+namespace Setur.Contacts.ContactApi.DTOs.Requests;
+
+public class DeleteCommunicationInfoRequest
 {
-    public class DeleteCommunicationInfoRequest
-    {
-        [Required]
-        public Guid Id { get; set; }
-    }
+    [Required]
+    public Guid Id { get; set; }
 }
