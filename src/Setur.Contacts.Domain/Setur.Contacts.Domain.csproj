@@ -7,4 +7,8 @@
 		<treatWarningsAsErrors>true</treatWarningsAsErrors>
 	</PropertyGroup>
 
+	<ItemGroup>
+	  <ProjectReference Include="..\Setur.Contacts.Base\Setur.Contacts.Base.csproj" />
+	</ItemGroup>
+
 </Project>
