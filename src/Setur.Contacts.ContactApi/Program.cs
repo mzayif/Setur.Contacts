@@ -5,6 +5,11 @@ using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.ContactApi.Data;
 using Setur.Contacts.ContactApi.Repositories;
 using Setur.Contacts.ContactApi.Services;
+using Setur.Contacts.ContactApi.Validators;
+using Setur.Contacts.ContactApi.Mappings;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Mapster;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,6 +20,14 @@ builder.Services.AddOpenApi();
 
 // Add Logger Service
 builder.Services.AddSingleton<ILoggerService, SerilogLoggerService>();
+
+// Add FluentValidation
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddFluentValidationClientsideAdapters();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateContactRequestValidator>();
+
+// Add Mapster
+builder.Services.AddMapster();
 
 // Add DbContext
 builder.Services.AddDbContext<ContactDbContext>(options =>

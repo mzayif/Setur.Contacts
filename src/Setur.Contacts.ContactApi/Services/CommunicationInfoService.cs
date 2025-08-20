@@ -5,108 +5,89 @@ using Setur.Contacts.ContactApi.DTOs.Requests;
 using Setur.Contacts.ContactApi.DTOs.Responses;
 using Setur.Contacts.ContactApi.Repositories;
 using Setur.Contacts.Domain.Entities;
+using Mapster;
 
-namespace Setur.Contacts.ContactApi.Services;
-
-public class CommunicationInfoService : ICommunicationInfoService
+namespace Setur.Contacts.ContactApi.Services
 {
-    private readonly CommunicationInfoRepository _communicationInfoRepository;
-    private readonly ContactRepository _contactRepository;
-
-    public CommunicationInfoService(CommunicationInfoRepository communicationInfoRepository, ContactRepository contactRepository)
+    public class CommunicationInfoService : ICommunicationInfoService
     {
-        _communicationInfoRepository = communicationInfoRepository;
-        _contactRepository = contactRepository;
-    }
+        private readonly CommunicationInfoRepository _communicationInfoRepository;
+        private readonly ContactRepository _contactRepository;
 
-    public async Task<SuccessDataResult<IEnumerable<CommunicationInfoResponse>>> GetAllCommunicationInfosAsync()
-    {
-        var communicationInfos = await _communicationInfoRepository.GetAll(isTracking: false)
-            .Select(ci => new CommunicationInfoResponse
-            {
-                Id = ci.Id,
-                Type = ci.Type,
-                Value = ci.Value
-            })
-            .ToListAsync();
-
-        return new SuccessDataResult<IEnumerable<CommunicationInfoResponse>>(communicationInfos, communicationInfos.Count);
-    }
-
-    public async Task<SuccessDataResult<CommunicationInfoResponse?>> GetCommunicationInfoByIdAsync(Guid id)
-    {
-        var communicationInfo = await _communicationInfoRepository.GetByIdAsync(id, throwException: false, isTracking: false);
-            
-        if (communicationInfo == null)
-            throw new NotFoundException("İletişim bilgisi bulunamadı");
-
-        var response = new CommunicationInfoResponse
+        public CommunicationInfoService(CommunicationInfoRepository communicationInfoRepository, ContactRepository contactRepository)
         {
-            Id = communicationInfo.Id,
-            Type = communicationInfo.Type,
-            Value = communicationInfo.Value
-        };
+            _communicationInfoRepository = communicationInfoRepository;
+            _contactRepository = contactRepository;
+        }
 
-        return new SuccessDataResult<CommunicationInfoResponse?>(response);
-    }
-
-    public async Task<SuccessDataResult<IEnumerable<CommunicationInfoResponse>>> GetCommunicationInfosByContactIdAsync(Guid contactId)
-    {
-        var communicationInfos = await _communicationInfoRepository.GetWhere(x => x.ContactId == contactId, isTracking: false)
-            .Select(ci => new CommunicationInfoResponse
-            {
-                Id = ci.Id,
-                Type = ci.Type,
-                Value = ci.Value
-            })
-            .ToListAsync();
-
-        return new SuccessDataResult<IEnumerable<CommunicationInfoResponse>>(communicationInfos, communicationInfos.Count);
-    }
-
-    public async Task<SuccessResponse> CreateCommunicationInfoAsync(CreateCommunicationInfoRequest request)
-    {
-        var contact = await _contactRepository.GetByIdAsync(request.ContactId, throwException: false);
-        if (contact == null)
-            throw new NotFoundException("Kişi bulunamadı");
-
-        var communicationInfo = new CommunicationInfo
+        public async Task<SuccessDataResult<IEnumerable<CommunicationInfoResponse>>> GetAllCommunicationInfosAsync()
         {
-            ContactId = request.ContactId,
-            Type = request.Type,
-            Value = request.Value
-        };
+            var communicationInfos = await _communicationInfoRepository.GetAll(isTracking: false)
+                .ProjectToType<CommunicationInfoResponse>()
+                .ToListAsync();
 
-        await _communicationInfoRepository.AddAsync(communicationInfo);
-        await _communicationInfoRepository.SaveAsync();
+            return new SuccessDataResult<IEnumerable<CommunicationInfoResponse>>(communicationInfos, communicationInfos.Count);
+        }
+
+        public async Task<SuccessDataResult<CommunicationInfoResponse?>> GetCommunicationInfoByIdAsync(Guid id)
+        {
+            var communicationInfo = await _communicationInfoRepository.GetByIdAsync(id, throwException: false, isTracking: false);
             
-        return new SuccessResponse("İletişim bilgisi başarıyla oluşturuldu");
-    }
+            if (communicationInfo == null)
+                throw new NotFoundException("İletişim bilgisi bulunamadı");
 
-    public async Task<SuccessResponse> UpdateCommunicationInfoAsync(Guid id, UpdateCommunicationInfoRequest request)
-    {
-        var communicationInfo = await _communicationInfoRepository.GetByIdAsync(id, throwException: false);
-        if (communicationInfo == null)
-            throw new NotFoundException("İletişim bilgisi bulunamadı");
+            var response = communicationInfo.Adapt<CommunicationInfoResponse>();
 
-        communicationInfo.Type = request.Type;
-        communicationInfo.Value = request.Value;
+            return new SuccessDataResult<CommunicationInfoResponse?>(response);
+        }
 
-        _communicationInfoRepository.Update(communicationInfo);
-        await _communicationInfoRepository.SaveAsync();
+        public async Task<SuccessDataResult<IEnumerable<CommunicationInfoResponse>>> GetCommunicationInfosByContactIdAsync(Guid contactId)
+        {
+            var communicationInfos = await _communicationInfoRepository.GetWhere(x => x.ContactId == contactId, isTracking: false)
+                .ProjectToType<CommunicationInfoResponse>()
+                .ToListAsync();
 
-        return new SuccessResponse("İletişim bilgisi başarıyla güncellendi");
-    }
+            return new SuccessDataResult<IEnumerable<CommunicationInfoResponse>>(communicationInfos, communicationInfos.Count);
+        }
 
-    public async Task<SuccessResponse> DeleteCommunicationInfoAsync(Guid id)
-    {
-        var communicationInfo = await _communicationInfoRepository.GetByIdAsync(id, throwException: false);
-        if (communicationInfo == null)
-            throw new NotFoundException("İletişim bilgisi bulunamadı");
+        public async Task<SuccessResponse> CreateCommunicationInfoAsync(CreateCommunicationInfoRequest request)
+        {
+            var contact = await _contactRepository.GetByIdAsync(request.ContactId, throwException: false);
+            if (contact == null)
+                throw new NotFoundException("Kişi bulunamadı");
 
-        _communicationInfoRepository.Remove(communicationInfo);
-        await _communicationInfoRepository.SaveAsync();
+            var communicationInfo = request.Adapt<CommunicationInfo>();
 
-        return new SuccessResponse("İletişim bilgisi başarıyla silindi");
+            await _communicationInfoRepository.AddAsync(communicationInfo);
+            await _communicationInfoRepository.SaveAsync();
+            
+            return new SuccessResponse("İletişim bilgisi başarıyla oluşturuldu");
+        }
+
+        public async Task<SuccessResponse> UpdateCommunicationInfoAsync(Guid id, UpdateCommunicationInfoRequest request)
+        {
+            var communicationInfo = await _communicationInfoRepository.GetByIdAsync(id, throwException: false);
+            if (communicationInfo == null)
+                throw new NotFoundException("İletişim bilgisi bulunamadı");
+
+            request.Adapt(communicationInfo);
+
+            _communicationInfoRepository.Update(communicationInfo);
+            await _communicationInfoRepository.SaveAsync();
+
+            return new SuccessResponse("İletişim bilgisi başarıyla güncellendi");
+        }
+
+        public async Task<SuccessResponse> DeleteCommunicationInfoAsync(Guid id)
+        {
+            var communicationInfo = await _communicationInfoRepository.GetByIdAsync(id, throwException: false);
+            if (communicationInfo == null)
+                throw new NotFoundException("İletişim bilgisi bulunamadı");
+
+            _communicationInfoRepository.Remove(communicationInfo);
+            await _communicationInfoRepository.SaveAsync();
+
+            return new SuccessResponse("İletişim bilgisi başarıyla silindi");
+        }
     }
 }

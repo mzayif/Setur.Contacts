@@ -4,11 +4,12 @@ using Microsoft.AspNetCore.Http;
 using Setur.Contacts.Base.Exceptions;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Results;
+using FluentValidation;
 
 namespace Setur.Contacts.Base.Middleware;
 
 /// <summary>
-/// Bu Middleware, uygulama genelinde meydana gelen hatalarý yakalar ve <see cref="ErrorResponse"/> paternine uygun HTTP yanýtlarýný döner.
+/// Bu Middleware, uygulama genelinde meydana gelen hatalarï¿½ yakalar ve <see cref="ErrorResponse"/> paternine uygun HTTP yanï¿½tlarï¿½nï¿½ dï¿½ner.
 /// </summary>
 public class GlobalExceptionHandlerMiddleware
 {
@@ -41,7 +42,15 @@ public class GlobalExceptionHandlerMiddleware
         ErrorResponse result;
         switch (exception)
         {
-            case ValidationException validationEx:
+            case FluentValidation.ValidationException fluentValidationEx:
+                response.StatusCode = (int)HttpStatusCode.BadRequest;
+                result = new ErrorResponse("VALIDATION_ERROR", "DoÄŸrulama hatasÄ±")
+                {
+                    ErrorMessages = fluentValidationEx.Errors.Select(e => e.ErrorMessage).ToList()
+                };
+                break;
+
+            case Setur.Contacts.Base.Exceptions.ValidationException validationEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
                 result = new ErrorResponse("VALIDATION_ERROR", "Validation failed")
                 {

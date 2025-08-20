@@ -18,6 +18,9 @@
     <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <PackageReference Include="Mapster" Version="7.4.2-pre02" />
+    <PackageReference Include="Mapster.DependencyInjection" Version="1.0.3-pre02" />
   </ItemGroup>
 
   <ItemGroup>
