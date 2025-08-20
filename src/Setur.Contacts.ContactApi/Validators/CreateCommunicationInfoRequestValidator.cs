@@ -15,11 +15,17 @@ namespace Setur.Contacts.ContactApi.Validators
 
             RuleFor(x => x.Value)
                 .NotEmpty().WithMessage("İletişim bilgisi değeri boş olamaz")
-                .MaximumLength(100).WithMessage("İletişim bilgisi değeri en fazla 100 karakter olabilir")
-                .When(x => x.Type == Domain.Enums.CommunicationType.Phone)
+                .MaximumLength(100).WithMessage("İletişim bilgisi değeri en fazla 100 karakter olabilir");
+
+            // Telefon numarası validasyonu
+            RuleFor(x => x.Value)
                 .Matches(@"^[+]?[0-9\s\-\(\)]+$").WithMessage("Geçersiz telefon numarası formatı")
-                .When(x => x.Type == Domain.Enums.CommunicationType.Email)
-                .EmailAddress().WithMessage("Geçersiz e-posta adresi formatı");
+                .When(x => x.Type == Domain.Enums.CommunicationType.Phone);
+
+            // Email validasyonu
+            RuleFor(x => x.Value)
+                .EmailAddress().WithMessage("Geçersiz e-posta adresi formatı")
+                .When(x => x.Type == Domain.Enums.CommunicationType.Email);
         }
     }
 }

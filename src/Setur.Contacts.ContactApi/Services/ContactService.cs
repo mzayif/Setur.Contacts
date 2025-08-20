@@ -47,7 +47,7 @@ namespace Setur.Contacts.ContactApi.Services
             await _contactRepository.AddAsync(contact);
             await _contactRepository.SaveAsync();
             
-            return new SuccessResponse("Kişi başarıyla oluşturuldu");
+            return new SuccessResponse(("1","Kişi başarıyla oluşturuldu"), contact.Id.ToString());
         }
 
         public async Task<SuccessResponse> UpdateContactAsync(Guid id, UpdateContactRequest request)
