@@ -10,5 +10,5 @@ public abstract class AddableEntity : Entity<Guid>, IAddableEntity
     }
 
     public DateTime CreateDate { get; set; } = DateTime.UtcNow;
-    public string CreateUser { get; set; } = default!;
+    public string CreateUser { get; set; } = "Test User";
 }
