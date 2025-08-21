@@ -4,8 +4,10 @@ namespace Setur.Contacts.Domain.Enums;
 
 public enum ReportStatus
 {
-    [Description("Rapor Haz�rlan�yor")]
+    [Description("Rapor Hazırlanıyor")]
     Preparing = 1,
-    [Description("Rapor Tamamland�")]
-    Completed = 2
+    [Description("Rapor Tamamlandı")]
+    Completed = 2,
+    [Description("Rapor Başarısız")]
+    Failed = 3
 }
