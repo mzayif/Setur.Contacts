@@ -2,6 +2,8 @@ using Setur.Contacts.Base.Results;
 using Setur.Contacts.Base.Exceptions;
 using Setur.Contacts.ContactApi.DTOs.Requests;
 using Setur.Contacts.ContactApi.DTOs.Responses;
+using Setur.Contacts.Domain.Enums;
+using Setur.Contacts.Domain.Models;
 
 namespace Setur.Contacts.ContactApi.Services;
 
@@ -44,4 +46,12 @@ public interface IContactService
     /// <exception cref="NotFoundException"></exception>
     /// <returns>Silme işlem sonucu</returns>
     Task<SuccessResponse> DeleteContactAsync(Guid id);
+
+    /// <summary>
+    /// Rapor verilerini getirir
+    /// </summary>
+    /// <param name="reportType">Rapor türü</param>
+    /// <param name="filters">Filtre değerleri (lokasyonlar, şirketler vs.)</param>
+    /// <returns>Rapor verileri</returns>
+    Task<SuccessDataResult<ReportDataResponse>> GetReportDataAsync(ReportType reportType, List<string> filters);
 }

@@ -6,5 +6,8 @@ public class Report : AddableEntity
 {
     public DateTime RequestedAt { get; set; }
     public ReportStatus Status { get; set; }
-    public ICollection<ReportDetail> ReportDetails { get; set; } = null!;
+    public ReportType Type { get; set; }
+    public string Parameters { get; set; } = string.Empty; // JSON string - rapor parametreleri
+    public string Summary { get; set; } = string.Empty;   // JSON string - özet bilgiler
+    public ICollection<ReportDetail> ReportDetails { get; set; } = new List<ReportDetail>();
 }
