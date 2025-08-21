@@ -7,7 +7,6 @@ using Setur.Contacts.Base.Middleware;
 using Setur.Contacts.Base.Services;
 using Setur.Contacts.Domain.Models;
 using Setur.Contacts.MessageBus.Services;
-using Setur.Contacts.ReportApi.BackgroundServices;
 using Setur.Contacts.ReportApi.Data;
 using Setur.Contacts.ReportApi.Repositories;
 using Setur.Contacts.ReportApi.Services;
@@ -59,8 +58,7 @@ builder.Services.AddScoped<IReportCacheService, RedisReportCacheService>();
 // Add Kafka Services
 builder.Services.AddScoped<IKafkaProducerService, KafkaProducerService>();
 
-// Add Background Services
-builder.Services.AddHostedService<ReportProcessingBackgroundService>();
+// Add Kafka Consumer as Background Service
 builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();

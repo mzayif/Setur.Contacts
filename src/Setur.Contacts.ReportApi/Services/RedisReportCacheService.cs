@@ -2,7 +2,6 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Setur.Contacts.Domain.Models;
-using Setur.Contacts.ReportApi.Models;
 
 namespace Setur.Contacts.ReportApi.Services;
 

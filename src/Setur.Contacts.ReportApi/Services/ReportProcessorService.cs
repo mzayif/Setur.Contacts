@@ -1,8 +1,8 @@
 using Newtonsoft.Json;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Domain.Enums;
+using Setur.Contacts.Domain.Models;
 using Setur.Contacts.ReportApi.Data;
-using Setur.Contacts.ReportApi.Models;
 using Setur.Contacts.ReportApi.Repositories;
 
 namespace Setur.Contacts.ReportApi.Services;

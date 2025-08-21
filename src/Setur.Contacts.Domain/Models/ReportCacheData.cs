@@ -1,7 +1,10 @@
 using Setur.Contacts.Domain.Enums;
 
-namespace Setur.Contacts.ReportApi.Models;
+namespace Setur.Contacts.Domain.Models;
 
+/// <summary>
+/// Redis cache'de saklanan rapor verisi
+/// </summary>
 public class ReportCacheData
 {
     public Guid ReportId { get; set; }
@@ -13,6 +16,9 @@ public class ReportCacheData
     public DateTime ExpiresAt { get; set; }
 }
 
+/// <summary>
+/// Redis cache'de saklanan rapor detay verisi
+/// </summary>
 public class ReportDetailCacheData
 {
     public string Location { get; set; } = string.Empty;
@@ -20,3 +26,4 @@ public class ReportDetailCacheData
     public int PhoneCount { get; set; }
     public int EmailCount { get; set; }
 }
+

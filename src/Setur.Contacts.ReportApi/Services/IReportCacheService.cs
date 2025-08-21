@@ -1,4 +1,4 @@
-using Setur.Contacts.ReportApi.Models;
+using Setur.Contacts.Domain.Models;
 
 namespace Setur.Contacts.ReportApi.Services;
 

@@ -6,7 +6,6 @@ using Setur.Contacts.Domain.Entities;
 using Setur.Contacts.Domain.Enums;
 using Setur.Contacts.MessageBus.Models;
 using Setur.Contacts.MessageBus.Services;
-using Setur.Contacts.ReportApi.BackgroundServices;
 using Setur.Contacts.ReportApi.DTOs.Requests;
 using Setur.Contacts.ReportApi.DTOs.Responses;
 using Setur.Contacts.ReportApi.Repositories;
@@ -17,20 +16,17 @@ public class ReportService : IReportService
 {
     private readonly ReportRepository _reportRepository;
     private readonly ReportDetailRepository _reportDetailRepository;
-    private readonly ReportProcessingBackgroundService _backgroundService;
     private readonly IReportCacheService _cacheService;
     private readonly IKafkaProducerService _kafkaProducerService;
 
     public ReportService(
         ReportRepository reportRepository,
         ReportDetailRepository reportDetailRepository,
-        ReportProcessingBackgroundService backgroundService,
         IReportCacheService cacheService,
         IKafkaProducerService kafkaProducerService)
     {
         _reportRepository = reportRepository;
         _reportDetailRepository = reportDetailRepository;
-        _backgroundService = backgroundService;
         _cacheService = cacheService;
         _kafkaProducerService = kafkaProducerService;
     }
@@ -64,7 +60,7 @@ public class ReportService : IReportService
                 Summary = JsonConvert.DeserializeObject(report.Summary) ?? new(),
                 Details = new List<ReportDetailResponse>(),
                 DataSource = "null",
-                Message = report.Status == ReportStatus.Preparing ? "Raporun hazırlanması devam ediyor." : " Rapor alımı sırasında hata oluştu. Raporu tekrar alınız"
+                Message = report.Status == ReportStatus.Preparing ? "Raporun hazırlanması devam ediyor." : "Rapor alımı sırasında hata oluştu. Raporu tekrar alınız"
             });
 
         // Rapor tamamlanmış ise detayları bulunur.
@@ -169,15 +165,8 @@ public class ReportService : IReportService
 
         if (!kafkaResult)
         {
-            // Kafka başarısız olursa background service'e gönder (fallback)
-            var reportRequest = new ReportProcessingBackgroundService.ReportRequest
-            {
-                ReportId = report.Id,
-                ReportType = request.ReportType,
-                Parameters = report.Parameters
-            };
-
-            await _backgroundService.EnqueueReportAsync(reportRequest);
+            // Kafka başarısız olursa hata fırlat
+            throw new Setur.Contacts.Base.Exceptions.BusinessException("Rapor işleme sistemi şu anda kullanılamıyor. Lütfen daha sonra tekrar deneyin.");
         }
 
         return new SuccessResponse("Rapor başarıyla oluşturuldu ve işleme alındı");
@@ -191,6 +180,9 @@ public class ReportService : IReportService
 
         _reportRepository.Remove(report);
         await _reportRepository.SaveAsync();
+
+        // Cache'den de sil
+        await _cacheService.DeleteReportAsync(id);
 
         return new SuccessResponse("Rapor başarıyla silindi");
     }
@@ -220,6 +212,4 @@ public class ReportService : IReportService
 
         return new SuccessResponse("Rapor kalıcı olarak kaydedildi");
     }
-
-
 }
