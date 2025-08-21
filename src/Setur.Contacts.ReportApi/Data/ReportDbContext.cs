@@ -21,6 +21,9 @@ public class ReportDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.RequestedAt).IsRequired();
             entity.Property(e => e.Status).IsRequired();
+            entity.Property(e => e.Type).IsRequired();
+            entity.Property(e => e.Parameters).IsRequired();
+            entity.Property(e => e.Summary).IsRequired();
         });
 
         modelBuilder.Entity<ReportDetail>(entity =>
@@ -29,6 +32,7 @@ public class ReportDbContext : DbContext
             entity.Property(e => e.Location).IsRequired().HasMaxLength(100);
             entity.Property(e => e.PersonCount).IsRequired();
             entity.Property(e => e.PhoneCount).IsRequired();
+            entity.Property(e => e.EmailCount).IsRequired();
             entity.HasOne(e => e.Report)
                 .WithMany(e => e.ReportDetails)
                 .HasForeignKey(e => e.ReportId)

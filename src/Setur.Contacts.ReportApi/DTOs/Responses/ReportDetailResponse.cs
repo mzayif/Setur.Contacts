@@ -1,3 +1,5 @@
+using Setur.Contacts.Domain.Enums;
+
 namespace Setur.Contacts.ReportApi.DTOs.Responses;
 
 public class ReportDetailResponse
@@ -6,4 +8,5 @@ public class ReportDetailResponse
     public string Location { get; set; } = string.Empty;
     public int PersonCount { get; set; }
     public int PhoneCount { get; set; }
+    public int EmailCount { get; set; }
 }

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Middleware;
 using Setur.Contacts.Base.Services;
+using Setur.Contacts.ReportApi.BackgroundServices;
 using Setur.Contacts.ReportApi.Data;
 using Setur.Contacts.ReportApi.Repositories;
 using Setur.Contacts.ReportApi.Services;
@@ -15,7 +16,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddOpenApi();
+builder.Services.AddSwaggerGen();
 
 // Add Logger Service
 builder.Services.AddSingleton<ILoggerService, SerilogLoggerService>();
@@ -36,18 +37,29 @@ builder.Services.AddDbContext<ReportDbContext>(options =>
 builder.Services.AddScoped<ReportRepository>();
 builder.Services.AddScoped<ReportDetailRepository>();
 
+// Add Redis Cache
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = "localhost:6379";
+});
+
 // Add Services
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IReportProcessorService, ReportProcessorService>();
+builder.Services.AddScoped<IReportCacheService, RedisReportCacheService>();
+
+// Add Background Services
+builder.Services.AddHostedService<ReportProcessingBackgroundService>();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsProduction())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "Report API V1");
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Report API V1");
         options.RoutePrefix = string.Empty; // Swagger UI'ı root'ta (/) açar
         options.DocumentTitle = "Setur Reports API";
     });

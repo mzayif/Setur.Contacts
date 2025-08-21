@@ -26,7 +26,12 @@ public class ReportController : ControllerBase
     }
 
     /// <summary>
-    /// Belirtilen ID'ye sahip raporu detaylarıyla birlikte getirir
+    /// Belirtilen ID'ye sahip raporun sonuçlarını getirir.
+    /// 
+    /// Öncelik Sırası:
+    /// 1. Cache'den kontrol eder (24 saat içinde oluşturulmuşsa)
+    /// 2. Database'den ReportDetail tablosundan kontrol eder (kalıcı kaydedilmişse)
+    /// 3. Sadece Report metadata'sını döner (detay yoksa)
     /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetReport(Guid id)
@@ -52,6 +57,16 @@ public class ReportController : ControllerBase
     public async Task<IActionResult> DeleteReport(Guid id)
     {
         var result = await _reportService.DeleteReportAsync(id);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Raporu kalıcı olarak kaydeder (Cache'den ReportDetail tablosuna)
+    /// </summary>
+    [HttpPost("{reportId}/save-permanently")]
+    public async Task<IActionResult> SaveReportPermanently(Guid reportId)
+    {
+        var result = await _reportService.SaveReportPermanentlyAsync(reportId);
         return Ok(result);
     }
 }

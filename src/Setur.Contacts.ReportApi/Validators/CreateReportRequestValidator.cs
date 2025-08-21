@@ -1,5 +1,6 @@
 using FluentValidation;
 using Setur.Contacts.ReportApi.DTOs.Requests;
+using Setur.Contacts.Domain.Enums;
 
 namespace Setur.Contacts.ReportApi.Validators;
 
@@ -7,9 +8,10 @@ public class CreateReportRequestValidator : AbstractValidator<CreateReportReques
 {
     public CreateReportRequestValidator()
     {
-        RuleFor(x => x.Location)
-            .NotEmpty().WithMessage("Lokasyon alanı boş olamaz")
-            .MaximumLength(100).WithMessage("Lokasyon en fazla 100 karakter olabilir")
-            .Matches(@"^[a-zA-ZğüşıöçĞÜŞİÖÇ\s\-]+$").WithMessage("Lokasyon sadece harf, boşluk ve tire içerebilir");
+        RuleFor(x => x.ReportType)
+            .IsInEnum().WithMessage("Geçersiz rapor türü");
+
+        RuleFor(x => x.Parameters)
+            .NotNull().WithMessage("Parametreler boş olamaz");
     }
 }

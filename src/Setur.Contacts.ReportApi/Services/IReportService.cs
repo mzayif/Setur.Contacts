@@ -14,12 +14,17 @@ public interface IReportService
     Task<SuccessDataResult<IEnumerable<ReportListResponse>>> GetAllReportsAsync();
 
     /// <summary>
-    /// Belirtilen ID'ye sahip raporu detaylarıyla birlikte getirir. Raporu bulamazsa NotFoundException fırlatır.
+    /// Belirtilen ID'ye sahip raporu detaylı bilgileri ile birlikte getirir.
+    /// 
+    /// Öncelik Sırası:
+    /// 1. Cache'den kontrol eder (24 saat içinde oluşturulmuşsa)
+    /// 2. Database'den ReportDetail tablosundan kontrol eder (kalıcı kaydedilmişse)
+    /// 3. Sadece Report metadata'sını döner (detay yoksa)
+    /// 
     /// </summary>
     /// <param name="id">Rapor ID'si</param>
-    /// <exception cref="NotFoundException"></exception>
-    /// <returns>Rapor detayları</returns>
-    Task<SuccessDataResult<ReportResponse?>> GetReportByIdAsync(Guid id);
+    /// <returns>Akıllı rapor response modeli</returns>
+    Task<SuccessDataResult<ReportSmartResponse>> GetReportByIdAsync(Guid id);
 
     /// <summary>
     /// Yeni bir rapor oluşturur
@@ -35,4 +40,11 @@ public interface IReportService
     /// <exception cref="NotFoundException"></exception>
     /// <returns>Silme işlem sonucu</returns>
     Task<SuccessResponse> DeleteReportAsync(Guid id);
+
+    /// <summary>
+    /// Raporu kalıcı olarak kaydeder (Cache'den ReportDetail tablosuna)
+    /// </summary>
+    /// <param name="reportId">Rapor ID'si</param>
+    /// <returns>Kaydetme işlem sonucu</returns>
+    Task<SuccessResponse> SaveReportPermanentlyAsync(Guid reportId);
 }

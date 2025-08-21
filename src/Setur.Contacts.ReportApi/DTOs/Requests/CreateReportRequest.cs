@@ -1,10 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using Setur.Contacts.Domain.Enums;
 
 namespace Setur.Contacts.ReportApi.DTOs.Requests;
 
 public class CreateReportRequest
 {
-    [Required(ErrorMessage = "Lokasyon alanı boş olamaz")]
-    [StringLength(100, ErrorMessage = "Lokasyon en fazla 100 karakter olabilir")]
-    public string Location { get; set; } = string.Empty;
+    [Required(ErrorMessage = "Rapor türü seçilmelidir")]
+    public ReportType ReportType { get; set; }
+
+    public object Parameters { get; set; } = new();
 }
