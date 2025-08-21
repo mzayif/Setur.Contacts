@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using Setur.Contacts.Base.Interfaces;
+using Setur.Contacts.Base.Results;
 using Setur.Contacts.Domain.Enums;
 using Setur.Contacts.Domain.Models;
 using Setur.Contacts.ReportApi.Data;
@@ -13,17 +14,23 @@ public class ReportProcessorService : IReportProcessorService
     private readonly ReportDbContext _context;
     private readonly ILoggerService _loggerService;
     private readonly IReportCacheService _cacheService;
+    private readonly HttpClient _httpClient;
+    private readonly string _contactApiBaseUrl;
 
     public ReportProcessorService(
         ReportRepository reportRepository,
         ReportDbContext context,
         ILoggerService loggerService,
-        IReportCacheService cacheService)
+        IReportCacheService cacheService,
+        HttpClient httpClient,
+        IConfiguration configuration)
     {
         _reportRepository = reportRepository;
         _context = context;
         _loggerService = loggerService;
         _cacheService = cacheService;
+        _httpClient = httpClient;
+        _contactApiBaseUrl = configuration["ContactApiBaseUrl"] ?? "https://localhost:7001";
     }
 
     public async Task ProcessReportAsync(Guid reportId, ReportType reportType, string parameters)
@@ -37,13 +44,14 @@ public class ReportProcessorService : IReportProcessorService
             if (report == null)
             {
                 _loggerService.LogError($"Rapor bulunamadı. ReportId: {reportId}");
+                return;
             }
 
             report.Status = ReportStatus.Preparing;
             await _reportRepository.SaveAsync();
 
-            // Rapor türüne göre işlem yap
-            var reportData = await GenerateReportDataAsync(reportType, parameters);
+            // ContactApi'den gerçek veri çek
+            var reportData = await GenerateReportDataFromContactApiAsync(reportType, parameters);
 
             // Cache'e kaydet
             await _cacheService.SetReportAsync(reportId, reportData);
@@ -68,11 +76,8 @@ public class ReportProcessorService : IReportProcessorService
         }
     }
 
-    private Task<ReportCacheData> GenerateReportDataAsync(ReportType reportType, string parameters)
+    private async Task<ReportCacheData> GenerateReportDataFromContactApiAsync(ReportType reportType, string parameters)
     {
-        // Bu kısım gerçekte ContactApi'den veri çekecek
-        // Şimdilik simüle edilmiş veriler döndürüyoruz
-
         var reportData = new ReportCacheData
         {
             ReportId = Guid.NewGuid(),
@@ -82,83 +87,75 @@ public class ReportProcessorService : IReportProcessorService
             ExpiresAt = DateTime.UtcNow.AddHours(24)
         };
 
-        switch (reportType)
+        try
         {
-            case ReportType.LocationBased:
-                var locationParams = JsonConvert.DeserializeObject<LocationReportParameters>(parameters);
-                reportData.Summary = JsonConvert.SerializeObject(new
-                {
-                    location = locationParams?.Location ?? "Bilinmeyen",
-                    totalPersonCount = Random.Shared.Next(50, 200),
-                    totalPhoneCount = Random.Shared.Next(30, 150),
-                    totalEmailCount = Random.Shared.Next(20, 100),
-                    totalLocationCount = Random.Shared.Next(1, 10)
-                });
+            var endpoint = reportType switch
+            {
+                ReportType.LocationBased => "location",
+                ReportType.CompanyBased => "company",
+                ReportType.General => "general",
+                _ => "general"
+            };
 
-                // Detay verileri
-                reportData.Details = new List<ReportDetailCacheData>
-                {
-                    new() { Location = "Kadıköy", PersonCount = 45, PhoneCount = 38, EmailCount = 30},
-                    new() { Location = "Beşiktaş", PersonCount = 32, PhoneCount = 28, EmailCount = 22 },
-                    new() { Location = "Şişli", PersonCount = 28, PhoneCount = 25, EmailCount = 18 }
-                };
-                break;
+            var url = $"{_contactApiBaseUrl}/api/ReportData/{endpoint}";
+            
+            // Parameters'dan filtreleri çıkar
+            var parametersObj = JsonConvert.DeserializeObject<ReportParameters>(parameters);
+            if (parametersObj?.Filters?.Any() == true && reportType != ReportType.General)
+            {
+                var filterString = string.Join(",", parametersObj.Filters);
+                url += $"?{endpoint}s={Uri.EscapeDataString(filterString)}";
+            }
 
-            case ReportType.CompanyBased:
-                var companyParams = JsonConvert.DeserializeObject<CompanyReportParameters>(parameters);
-                reportData.Summary = JsonConvert.SerializeObject(new
+            var response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                var responseData = await response.Content.ReadAsStringAsync();
+                var result = JsonConvert.DeserializeObject<SuccessDataResult<ReportDataResponse>>(responseData);
+                
+                if (result?.Data != null)
                 {
-                    company = companyParams?.Company ?? "Bilinmeyen",
-                    totalPersonCount = Random.Shared.Next(10, 100),
-                    totalPhoneCount = Random.Shared.Next(8, 80),
-                    totalEmailCount = Random.Shared.Next(5, 60),
-                    locationCount = Random.Shared.Next(1, 5)
-                });
+                    reportData.Summary = JsonConvert.SerializeObject(new
+                    {
+                        reportType = result.Data.ReportType.ToString(),
+                        filters = result.Data.Filters,
+                        totalPersonCount = result.Data.TotalPersonCount,
+                        totalPhoneCount = result.Data.TotalPhoneCount,
+                        totalEmailCount = result.Data.TotalEmailCount,
+                        totalLocationCount = result.Data.TotalLocationCount,
+                        topCompanies = result.Data.TopCompanies,
+                        topLocations = result.Data.TopLocations
+                    });
 
-                // Detay verileri
-                reportData.Details = new List<ReportDetailCacheData>
-                {
-                    new() { Location = "İstanbul", PersonCount = 25, PhoneCount = 22, EmailCount = 18 },
-                    new() { Location = "Ankara", PersonCount = 18, PhoneCount = 15, EmailCount = 12 },
-                    new() { Location = "İzmir", PersonCount = 12, PhoneCount = 10, EmailCount = 8 }
-                };
-                break;
-
-            case ReportType.General:
-                reportData.Summary = JsonConvert.SerializeObject(new
-                {
-                    totalContacts = Random.Shared.Next(500, 2000),
-                    totalPhones = Random.Shared.Next(400, 1600),
-                    totalEmails = Random.Shared.Next(300, 1200),
-                    totalLocations = Random.Shared.Next(10, 50),
-                    topCompanies = new[] { "Setur", "ABC Ltd", "XYZ Corp" },
-                    topLocations = new[] { "İstanbul", "Ankara", "İzmir" }
-                });
-
-                // Detay verileri
-                reportData.Details = new List<ReportDetailCacheData>
-                {
-                    new() { Location = "İstanbul", PersonCount = 150, PhoneCount = 120, EmailCount = 80 },
-                    new() { Location = "Ankara", PersonCount = 85, PhoneCount = 70, EmailCount = 45 },
-                    new() { Location = "İzmir", PersonCount = 65, PhoneCount = 55, EmailCount = 35 }
-                };
-                break;
-
-            default:
-                reportData.Summary = JsonConvert.SerializeObject(new { error = "Bilinmeyen rapor türü" });
-                break;
+                    reportData.Details = result.Data.Details.Select(d => new ReportDetailCacheData
+                    {
+                        Location = d.Location,
+                        PersonCount = d.PersonCount,
+                        PhoneCount = d.PhoneCount,
+                        EmailCount = d.EmailCount
+                    }).ToList();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _loggerService.LogError($"ContactApi'den veri çekme hatası: {ex.Message}");
+            
+            // Hata durumunda simüle edilmiş veri döndür
+            reportData.Summary = JsonConvert.SerializeObject(new { error = "Veri çekme hatası", message = ex.Message });
+            reportData.Details = new List<ReportDetailCacheData>
+            {
+                new() { Location = "Hata", PersonCount = 0, PhoneCount = 0, EmailCount = 0 }
+            };
         }
 
-        return Task.FromResult(reportData);
+        return reportData;
     }
 
-    private class LocationReportParameters
+    private class ReportParameters
     {
-        public string? Location { get; set; }
-    }
-
-    private class CompanyReportParameters
-    {
-        public string? Company { get; set; }
+        public List<string>? Filters { get; set; }
     }
 }
+
+

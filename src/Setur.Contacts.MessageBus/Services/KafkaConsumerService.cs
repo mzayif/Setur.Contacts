@@ -4,7 +4,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using Setur.Contacts.Domain.Models;
+using Setur.Contacts.Domain.CommonModels;
 using Setur.Contacts.MessageBus.Models;
 
 namespace Setur.Contacts.MessageBus.Services;

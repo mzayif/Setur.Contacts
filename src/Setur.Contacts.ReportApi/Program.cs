@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Middleware;
 using Setur.Contacts.Base.Services;
+using Setur.Contacts.Domain.CommonModels;
 using Setur.Contacts.Domain.Models;
 using Setur.Contacts.MessageBus.Services;
 using Setur.Contacts.ReportApi.Data;
@@ -37,6 +38,9 @@ builder.Services.AddDbContext<ReportDbContext>(options =>
 // Add Configuration
 builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
 builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+
+// Add HttpClient
+builder.Services.AddHttpClient();
 
 // Add Repositories
 builder.Services.AddScoped<ReportRepository>();
