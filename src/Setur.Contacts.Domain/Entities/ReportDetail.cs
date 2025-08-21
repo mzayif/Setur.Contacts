@@ -9,6 +9,7 @@ public class ReportDetail : AddableEntity
     public int PersonCount { get; set; }
     public int PhoneCount { get; set; }
     public int EmailCount { get; set; }
-    public int LocationCount { get; set; }
+
+
     public Report? Report { get; set; }
 }

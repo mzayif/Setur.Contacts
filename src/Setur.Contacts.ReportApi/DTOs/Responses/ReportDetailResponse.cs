@@ -1,5 +1,3 @@
-using Setur.Contacts.Domain.Enums;
-
 namespace Setur.Contacts.ReportApi.DTOs.Responses;
 
 public class ReportDetailResponse

@@ -1,6 +1,5 @@
 using FluentValidation;
 using Setur.Contacts.ReportApi.DTOs.Requests;
-using Setur.Contacts.Domain.Enums;
 
 namespace Setur.Contacts.ReportApi.Validators;
 

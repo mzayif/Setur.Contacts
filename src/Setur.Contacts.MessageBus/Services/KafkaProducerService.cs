@@ -1,6 +1,8 @@
 using Confluent.Kafka;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
+using Setur.Contacts.Domain.Models;
 using Setur.Contacts.MessageBus.Models;
 
 namespace Setur.Contacts.MessageBus.Services;
@@ -9,16 +11,19 @@ public class KafkaProducerService : IKafkaProducerService
 {
     private readonly IProducer<string, string> _producer;
     private readonly ILogger<KafkaProducerService> _logger;
-    private const string TopicName = "report-requests";
+    private readonly KafkaSettings _kafkaSettings;
 
-    public KafkaProducerService(ILogger<KafkaProducerService> logger)
+    public KafkaProducerService(
+        IOptions<KafkaSettings> kafkaSettings,
+        ILogger<KafkaProducerService> logger)
     {
+        _kafkaSettings = kafkaSettings.Value;
         _logger = logger;
-        
+
         var config = new ProducerConfig
         {
-            BootstrapServers = "localhost:9092", // Kafka server adresi
-            ClientId = "setur-contacts-producer"
+            BootstrapServers = _kafkaSettings.BootstrapServers,
+            ClientId = _kafkaSettings.ClientId
         };
 
         _producer = new ProducerBuilder<string, string>(config).Build();
@@ -35,11 +40,11 @@ public class KafkaProducerService : IKafkaProducerService
                 Value = jsonMessage
             };
 
-            var result = await _producer.ProduceAsync(TopicName, kafkaMessage);
-            
-            _logger.LogInformation("Report request sent to Kafka. ReportId: {ReportId}, Topic: {Topic}, Partition: {Partition}, Offset: {Offset}", 
+            var result = await _producer.ProduceAsync(_kafkaSettings.TopicName, kafkaMessage);
+
+            _logger.LogInformation("Report request sent to Kafka. ReportId: {ReportId}, Topic: {Topic}, Partition: {Partition}, Offset: {Offset}",
                 message.ReportId, result.Topic, result.Partition, result.Offset);
-            
+
             return true;
         }
         catch (Exception ex)

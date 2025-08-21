@@ -5,6 +5,8 @@ using Microsoft.EntityFrameworkCore;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Middleware;
 using Setur.Contacts.Base.Services;
+using Setur.Contacts.Domain.Models;
+using Setur.Contacts.MessageBus.Services;
 using Setur.Contacts.ReportApi.BackgroundServices;
 using Setur.Contacts.ReportApi.Data;
 using Setur.Contacts.ReportApi.Repositories;
@@ -33,6 +35,10 @@ builder.Services.AddMapster();
 builder.Services.AddDbContext<ReportDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("ReportDb")));
 
+// Add Configuration
+builder.Services.Configure<RedisSettings>(builder.Configuration.GetSection("Redis"));
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+
 // Add Repositories
 builder.Services.AddScoped<ReportRepository>();
 builder.Services.AddScoped<ReportDetailRepository>();
@@ -40,7 +46,9 @@ builder.Services.AddScoped<ReportDetailRepository>();
 // Add Redis Cache
 builder.Services.AddStackExchangeRedisCache(options =>
 {
-    options.Configuration = "localhost:6379";
+    var redisSettings = builder.Configuration.GetSection("Redis").Get<RedisSettings>();
+    options.Configuration = redisSettings?.ConnectionString ?? "localhost:6379";
+    options.InstanceName = redisSettings?.InstanceName ?? "SeturContacts:";
 });
 
 // Add Services
@@ -48,8 +56,12 @@ builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IReportProcessorService, ReportProcessorService>();
 builder.Services.AddScoped<IReportCacheService, RedisReportCacheService>();
 
+// Add Kafka Services
+builder.Services.AddScoped<IKafkaProducerService, KafkaProducerService>();
+
 // Add Background Services
 builder.Services.AddHostedService<ReportProcessingBackgroundService>();
+builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();
 

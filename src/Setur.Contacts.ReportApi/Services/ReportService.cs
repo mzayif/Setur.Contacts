@@ -4,6 +4,8 @@ using Newtonsoft.Json;
 using Setur.Contacts.Base.Results;
 using Setur.Contacts.Domain.Entities;
 using Setur.Contacts.Domain.Enums;
+using Setur.Contacts.MessageBus.Models;
+using Setur.Contacts.MessageBus.Services;
 using Setur.Contacts.ReportApi.BackgroundServices;
 using Setur.Contacts.ReportApi.DTOs.Requests;
 using Setur.Contacts.ReportApi.DTOs.Responses;
@@ -17,17 +19,20 @@ public class ReportService : IReportService
     private readonly ReportDetailRepository _reportDetailRepository;
     private readonly ReportProcessingBackgroundService _backgroundService;
     private readonly IReportCacheService _cacheService;
+    private readonly IKafkaProducerService _kafkaProducerService;
 
     public ReportService(
         ReportRepository reportRepository,
         ReportDetailRepository reportDetailRepository,
         ReportProcessingBackgroundService backgroundService,
-        IReportCacheService cacheService)
+        IReportCacheService cacheService,
+        IKafkaProducerService kafkaProducerService)
     {
         _reportRepository = reportRepository;
         _reportDetailRepository = reportDetailRepository;
         _backgroundService = backgroundService;
         _cacheService = cacheService;
+        _kafkaProducerService = kafkaProducerService;
     }
 
     public async Task<SuccessDataResult<IEnumerable<ReportListResponse>>> GetAllReportsAsync()
@@ -151,15 +156,29 @@ public class ReportService : IReportService
         await _reportRepository.AddAsync(report);
         await _reportRepository.SaveAsync();
 
-        // Background service'e rapor işleme isteği gönder
-        var reportRequest = new ReportProcessingBackgroundService.ReportRequest
+        // Kafka'ya rapor işleme isteği gönder
+        var kafkaMessage = new ReportRequestMessage
         {
             ReportId = report.Id,
             ReportType = request.ReportType,
-            Parameters = report.Parameters
+            Parameters = report.Parameters,
+            RequestedAt = report.RequestedAt
         };
 
-        await _backgroundService.EnqueueReportAsync(reportRequest);
+        var kafkaResult = await _kafkaProducerService.SendReportRequestAsync(kafkaMessage);
+
+        if (!kafkaResult)
+        {
+            // Kafka başarısız olursa background service'e gönder (fallback)
+            var reportRequest = new ReportProcessingBackgroundService.ReportRequest
+            {
+                ReportId = report.Id,
+                ReportType = request.ReportType,
+                Parameters = report.Parameters
+            };
+
+            await _backgroundService.EnqueueReportAsync(reportRequest);
+        }
 
         return new SuccessResponse("Rapor başarıyla oluşturuldu ve işleme alındı");
     }
