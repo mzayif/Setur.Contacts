@@ -2,10 +2,12 @@ using Microsoft.EntityFrameworkCore;
 using Setur.Contacts.Base.Exceptions;
 using Setur.Contacts.Base.Results;
 using Setur.Contacts.ContactApi.DTOs.Requests;
-using Setur.Contacts.ContactApi.DTOs.Responses;
+using Setur.Contacts.Domain.Models;
 using Setur.Contacts.ContactApi.Repositories;
 using Setur.Contacts.Domain.Entities;
+using Setur.Contacts.Domain.Enums;
 using Mapster;
+using Setur.Contacts.ContactApi.DTOs.Responses;
 
 namespace Setur.Contacts.ContactApi.Services;
 
@@ -46,8 +48,8 @@ public class ContactService : IContactService
 
         await _contactRepository.AddAsync(contact);
         await _contactRepository.SaveAsync();
-            
-        return new SuccessResponse(("1","Kişi başarıyla oluşturuldu"), contact.Id.ToString());
+
+        return new SuccessResponse(("1", "Kişi başarıyla oluşturuldu"), contact.Id.ToString());
     }
 
     public async Task<SuccessResponse> UpdateContactAsync(Guid id, UpdateContactRequest request)
@@ -74,5 +76,87 @@ public class ContactService : IContactService
         await _contactRepository.SaveAsync();
 
         return new SuccessResponse("Kişi başarıyla silindi");
+    }
+
+    public async Task<SuccessDataResult<ReportDataResponse>> GetReportDataAsync(ReportType reportType, List<string> filters)
+    {
+        var result = new ReportDataResponse
+        {
+            ReportType = reportType,
+            Filters = filters
+        };
+
+        // IQueryable'ı başlat
+        var contactsQuery = _contactRepository.GetWhere(includeProperties: "CommunicationInfos", isTracking: false);
+
+        // Rapor türüne göre filtreleme - veritabanı seviyesinde (büyük/küçük harf duyarsız)
+        contactsQuery = reportType switch
+        {
+            ReportType.LocationBased => filters.Any()
+                ? contactsQuery.Where(c => c.CommunicationInfos != null && c.CommunicationInfos.Any(ci => 
+                    ci.Type == CommunicationType.Location && 
+                    filters.Any(f => ci.Value.ToLower() == f.ToLower())))
+                : contactsQuery,
+            ReportType.CompanyBased => filters.Any()
+                ? contactsQuery.Where(c => filters.Any(f => c.Company.ToLower() == f.ToLower()))
+                : contactsQuery,
+            ReportType.General => contactsQuery,
+            _ => contactsQuery
+        };
+
+        // En son veri verilen koşullara göre DB den çağrılır
+        var filteredContacts = await contactsQuery.ToListAsync();
+
+        // Toplam sayıları hesapla
+        result.TotalPersonCount = filteredContacts.Count;
+        result.TotalPhoneCount = filteredContacts.SelectMany(c => c.CommunicationInfos).Count(ci => ci.Type == CommunicationType.Phone);
+        result.TotalEmailCount = filteredContacts.SelectMany(c => c.CommunicationInfos).Count(ci => ci.Type == CommunicationType.Email);
+
+        // Lokasyon bazlı detayları hesapla
+        var locationGroups = filteredContacts
+            .SelectMany(c => c.CommunicationInfos)
+            .Where(c => c.Type == CommunicationType.Location)
+            .GroupBy(ci => ci.Value)
+            .Select(g => new ReportDetailData
+            {
+                Location = g.Key,
+                PersonCount = g.Select(ci => ci.ContactId).Distinct().Count(),
+                PhoneCount = 0,
+                EmailCount = 0
+            })
+            .OrderByDescending(d => d.PersonCount)
+            .ToList();
+
+        foreach (var row in locationGroups)
+        {
+            row.EmailCount = filteredContacts
+                .Where(x => x.CommunicationInfos.Any(y =>
+                    y.Type == CommunicationType.Location && y.Value == row.Location)).Select(x =>
+                    x.CommunicationInfos.Where(z => z.Type == CommunicationType.Email)).FirstOrDefault().Count();
+            row.PhoneCount= filteredContacts
+                .Where(x => x.CommunicationInfos.Any(y =>
+                    y.Type == CommunicationType.Location && y.Value == row.Location)).Select(x =>
+                    x.CommunicationInfos.Where(z => z.Type == CommunicationType.Phone)).FirstOrDefault().Count();
+        }
+
+        result.Details = locationGroups;
+        result.TotalLocationCount = locationGroups.Count;
+
+        // En çok kişi bulunan şirketler
+        result.TopCompanies = filteredContacts
+            .GroupBy(c => c.Company)
+            .OrderByDescending(g => g.Count())
+            .Take(3)
+            .Select(g => g.Key)
+            .ToList();
+
+        // En çok kişi bulunan lokasyonlar
+        result.TopLocations = locationGroups
+            .OrderByDescending(d => d.PersonCount)
+            .Take(3)
+            .Select(d => d.Location)
+            .ToList();
+
+        return new SuccessDataResult<ReportDataResponse>(result,result.Details.Count);
     }
 }
