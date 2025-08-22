@@ -4,6 +4,7 @@
 @inject IReportStatusService ReportStatusService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IToastService ToastService
 
 <PageTitle>Raporlar - Setur Contacts</PageTitle>
 
@@ -16,7 +17,7 @@
                     Raporlar
                 </h2>
             </div>
-            
+
             <div class="row">
                 <div class="col-md-6">
                     <div class="card">
@@ -31,23 +32,23 @@
                                 <label for="locationFilter" class="form-label">Lokasyon Filtresi (virgülle ayırın)</label>
                                 <input type="text" id="locationFilter" class="form-control" @bind="locationFilter" placeholder="İstanbul, Ankara, İzmir" />
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="companyFilter" class="form-label">Şirket Filtresi (virgülle ayırın)</label>
                                 <input type="text" id="companyFilter" class="form-control" @bind="companyFilter" placeholder="Setur, ABC Şirketi" />
                             </div>
-                            
+
                             <div class="d-grid gap-2">
                                 <button class="btn btn-primary" @onclick="() => CreateReport(ReportType.LocationBased, locationFilter)">
                                     <i class="fas fa-map-marker-alt me-2"></i>
                                     Lokasyon Bazlı Rapor
                                 </button>
-                                
+
                                 <button class="btn btn-success" @onclick="() => CreateReport(ReportType.CompanyBased, companyFilter)">
                                     <i class="fas fa-building me-2"></i>
                                     Şirket Bazlı Rapor
                                 </button>
-                                
+
                                 <button class="btn btn-info" @onclick="() => CreateReport(ReportType.General, string.Empty)">
                                     <i class="fas fa-chart-pie me-2"></i>
                                     Genel İstatistik Raporu
@@ -56,7 +57,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="col-md-6">
                     <div class="card">
                         <div class="card-header">
@@ -89,9 +90,20 @@
                                                 <span class="badge @GetStatusBadgeClass(report.Status) me-2">
                                                     @GetStatusName(report.Status)
                                                 </span>
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteReport(report.Id)" title="Sil">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewReport(report.Id)" title="Görüntüle">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    @if (report.Status == ReportStatus.Failed)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => RetryReport(report.Id)" title="Yeniden Dene">
+                                                            <i class="fas fa-redo"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteReport(report.Id)" title="Sil">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     }
@@ -144,14 +156,14 @@
             }
             else if (!_isFirstRender)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                ToastService.ShowError(result.Message, "Hata");
             }
         }
         catch (Exception ex)
         {
             if (!_isFirstRender)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Raporlar yüklenirken hata oluştu: {ex.Message}");
+                ToastService.ShowError($"Raporlar yüklenirken hata oluştu: {ex.Message}", "Hata");
             }
         }
         finally
@@ -165,36 +177,36 @@
         try
         {
             var request = new CreateReportRequest
-            {
-                ReportType = reportType,
-                Parameters = filters
-            };
+                {
+                    ReportType = reportType,
+                    Parameters = filters
+                };
 
             var result = await ReportService.CreateReportAsync(request);
-            
+
             if (result.Success)
             {
                 if (!_isFirstRender)
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", "Rapor oluşturuldu! İşlem arka planda devam ediyor.");
+                    ToastService.ShowSuccess("Rapor oluşturuldu! İşlem arka planda devam ediyor.", "Başarılı");
                 }
-                
+
                 // Rapor durumunu takip etmeye başla
-                await ReportStatusService.StartMonitoringReport(result.Data.Id);
-                
+                await ReportStatusService.StartMonitoringReport(Guid.Parse(result.ResponseId));
+
                 // Rapor listesini yenile
                 await LoadReports();
             }
             else if (!_isFirstRender)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                ToastService.ShowError(result.Message, "Hata");
             }
         }
         catch (Exception ex)
         {
             if (!_isFirstRender)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
             }
         }
     }
@@ -208,17 +220,46 @@
                 var result = await ReportService.DeleteReportAsync(reportId);
                 if (result.Success)
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", "Rapor silindi!");
+                    ToastService.ShowSuccess("Rapor silindi!", "Başarılı");
                     await LoadReports();
                 }
                 else
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                    ToastService.ShowError(result.Message, "Hata");
                 }
             }
             catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+            }
+        }
+    }
+
+    private void ViewReport(Guid reportId)
+    {
+        Navigation.NavigateTo($"/reports/{reportId}");
+    }
+
+    private async Task RetryReport(Guid reportId)
+    {
+        if (!_isFirstRender && await JSRuntime.InvokeAsync<bool>("confirm", "Bu raporu yeniden işlemek istediğinizden emin misiniz?"))
+        {
+            try
+            {
+                var result = await ReportService.RetryReportAsync(reportId);
+                if (result.Success)
+                {
+                    ToastService.ShowSuccess("Rapor yeniden işlemeye gönderildi!", "Başarılı");
+                    await LoadReports();
+                }
+                else
+                {
+                    ToastService.ShowError(result.Message, "Hata");
+                }
+            }
+            catch (Exception ex)
+            {
+                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
             }
         }
     }

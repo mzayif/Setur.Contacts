@@ -4,6 +4,7 @@
 @inject ICommunicationInfoService CommunicationInfoService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IToastService ToastService
 
 <PageTitle>Kişi Detayı - Setur Contacts</PageTitle>
 
@@ -168,7 +169,7 @@
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Kişi yüklenirken hata oluştu: {ex.Message}");
+            ToastService.ShowError($"Kişi yüklenirken hata oluştu: {ex.Message}", "Hata");
         }
         finally
         {
@@ -185,17 +186,17 @@
                 var result = await CommunicationInfoService.DeleteCommunicationInfoAsync(communicationInfoId);
                 if (result.Success)
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", "İletişim bilgisi silindi!");
+                    ToastService.ShowSuccess("İletişim bilgisi silindi!", "Başarılı");
                     await LoadContact(); // Sayfayı yenile
                 }
                 else
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                    ToastService.ShowError(result.Message, "Hata");
                 }
             }
             catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
             }
         }
     }

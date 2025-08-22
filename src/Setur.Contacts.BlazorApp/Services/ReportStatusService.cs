@@ -10,7 +10,7 @@ public class ReportStatusService : IReportStatusService
     private readonly Dictionary<Guid, Timer> _monitoringTimers = new();
     private readonly Dictionary<Guid, CancellationTokenSource> _cancellationTokens = new();
 
-    public event Action<ReportResponse>? ReportCompleted;
+    public event Action<ReportSmartResponse>? ReportCompleted;
     public event Action<string>? ReportFailed;
 
     public ReportStatusService(IReportService reportService)

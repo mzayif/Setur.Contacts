@@ -14,17 +14,18 @@ public class ReportService : IReportService
         _httpClient = httpClient;
     }
 
-    public async Task<SuccessDataResult<ReportResponse>> CreateReportAsync(CreateReportRequest request)
+    public async Task<SuccessResponse> CreateReportAsync(CreateReportRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/Report", request);
         response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<SuccessDataResult<ReportResponse>>() ?? new SuccessDataResult<ReportResponse>(new ReportResponse());
+        var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor oluşturuldu");
+        return result;
     }
 
-    public async Task<SuccessDataResult<ReportResponse?>> GetReportByIdAsync(Guid id)
+    public async Task<SuccessDataResult<ReportSmartResponse?>> GetReportByIdAsync(Guid id)
     {
-        var response = await _httpClient.GetFromJsonAsync<SuccessDataResult<ReportResponse?>>($"api/Report/{id}");
-        return response ?? new SuccessDataResult<ReportResponse?>(null);
+        var response = await _httpClient.GetFromJsonAsync<SuccessDataResult<ReportSmartResponse?>>($"api/Report/{id}");
+        return response ?? new SuccessDataResult<ReportSmartResponse?>(null);
     }
 
     public async Task<SuccessDataResult<IEnumerable<ReportListResponse>>> GetAllReportsAsync()
@@ -44,5 +45,21 @@ public class ReportService : IReportService
     {
         var response = await _httpClient.GetFromJsonAsync<SuccessDataResult<ReportDetailResponse?>>($"api/Report/{id}/details");
         return response ?? new SuccessDataResult<ReportDetailResponse?>(null);
+    }
+
+    public async Task<SuccessResponse> RetryReportAsync(Guid id)
+    {
+        var response = await _httpClient.PostAsync($"api/Report/{id}/retry", null);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor yeniden işlemeye gönderildi");
+        return result;
+    }
+
+    public async Task<SuccessResponse> SaveReportPermanentlyAsync(Guid id)
+    {
+        var response = await _httpClient.PostAsync($"api/Report/{id}/save-permanently", null);
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor kalıcı olarak kaydedildi");
+        return result;
     }
 }

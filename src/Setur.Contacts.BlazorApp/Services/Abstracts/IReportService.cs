@@ -6,9 +6,11 @@ namespace Setur.Contacts.BlazorApp.Services.Abstracts;
 
 public interface IReportService
 {
-    Task<SuccessDataResult<ReportResponse>> CreateReportAsync(CreateReportRequest request);
-    Task<SuccessDataResult<ReportResponse?>> GetReportByIdAsync(Guid id);
+    Task<SuccessResponse> CreateReportAsync(CreateReportRequest request);
+    Task<SuccessDataResult<ReportSmartResponse?>> GetReportByIdAsync(Guid id);
     Task<SuccessDataResult<IEnumerable<ReportListResponse>>> GetAllReportsAsync();
     Task<SuccessResponse> DeleteReportAsync(Guid id);
     Task<SuccessDataResult<ReportDetailResponse?>> GetReportDetailsAsync(Guid id);
+    Task<SuccessResponse> RetryReportAsync(Guid id);
+    Task<SuccessResponse> SaveReportPermanentlyAsync(Guid id);
 }

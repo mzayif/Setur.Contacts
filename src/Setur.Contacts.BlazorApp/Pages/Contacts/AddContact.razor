@@ -3,6 +3,7 @@
 @inject IContactService ContactService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IToastService ToastService
 
 <PageTitle>Kişi Ekle - Setur Contacts</PageTitle>
 
@@ -82,17 +83,17 @@
             
             if (result.Success)
             {
-                await JSRuntime.InvokeVoidAsync("alert", "Kişi başarıyla eklendi!");
+                ToastService.ShowSuccess("Kişi başarıyla eklendi!", "Başarılı");
                 Navigation.NavigateTo("/");
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                ToastService.ShowError(result.Message, "Hata");
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+            ToastService.ShowError(ex.Message, "Hata");
         }
         finally
         {

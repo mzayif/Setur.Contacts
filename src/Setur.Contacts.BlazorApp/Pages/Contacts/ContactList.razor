@@ -3,6 +3,7 @@
 @inject IContactService ContactService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IToastService ToastService
 
 <PageTitle>Kişi Listesi - Setur Contacts</PageTitle>
 
@@ -135,12 +136,12 @@
             }
             else
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                ToastService.ShowError(result.Message, "Hata");
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Kişiler yüklenirken hata oluştu: {ex.Message}");
+            ToastService.ShowError($"Kişiler yüklenirken hata oluştu: {ex.Message}", "Hata");
         }
         finally
         {
@@ -172,17 +173,17 @@
                 var result = await ContactService.DeleteContactAsync(contactId);
                 if (result.Success)
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", "Kişi silindi!");
+                    ToastService.ShowSuccess("Kişi silindi!", "Başarılı");
                     await LoadContacts();
                 }
                 else
                 {
-                    await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                    ToastService.ShowError(result.Message, "Hata");
                 }
             }
             catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
             }
         }
     }

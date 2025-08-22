@@ -3,6 +3,7 @@
 @inject IReportStatusService ReportStatusService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
+@inject IToastService ToastService
 
 <PageTitle>Setur Contacts - Ana Sayfa</PageTitle>
 
@@ -55,15 +56,15 @@
 
 
 
-    private async void OnReportCompleted(ReportResponse report)
+    private async void OnReportCompleted(ReportSmartResponse report)
     {
         if (!_isFirstRender)
         {
-            // JavaScript ile bildirim göster
-            var message = $"Rapor tamamlandı! Rapor ID: {report.Id}";
+            // Toast ile bildirim göster
+            var message = $"Rapor tamamlandı! Rapor ID: {report.ReportId}";
             await InvokeAsync(async () =>
             {
-                await JSRuntime.InvokeVoidAsync("alert", message);
+                ToastService.ShowSuccess(message, "Rapor Tamamlandı");
                 StateHasChanged();
             });
         }
@@ -73,10 +74,10 @@
     {
         if (!_isFirstRender)
         {
-            // JavaScript ile hata bildirimi göster
+            // Toast ile hata bildirimi göster
             await InvokeAsync(async () =>
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {errorMessage}");
+                ToastService.ShowError(errorMessage, "Rapor Hatası");
                 StateHasChanged();
             });
         }

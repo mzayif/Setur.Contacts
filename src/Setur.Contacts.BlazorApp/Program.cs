@@ -7,6 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
+// Toast servisi
+builder.Services.AddScoped<IToastService, ToastService>();
+
 // HttpClient ve Contact API servisleri
 builder.Services.AddHttpClient<IContactService, ContactService>(client =>
 {
