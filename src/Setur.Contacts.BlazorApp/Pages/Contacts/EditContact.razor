@@ -1,11 +1,10 @@
-@page "/contacts/{ContactId:guid}/add-communication"
+@page "/contacts/{ContactId:guid}/edit"
 
 @inject IContactService ContactService
-@inject ICommunicationInfoService CommunicationInfoService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 
-<PageTitle>İletişim Bilgisi Ekle - Setur Contacts</PageTitle>
+<PageTitle>Kişi Düzenle - Setur Contacts</PageTitle>
 
 <div class="container mt-4">
     <div class="row justify-content-center">
@@ -13,36 +12,48 @@
             <div class="card">
                 <div class="card-header">
                     <h4 class="mb-0">
-                        <i class="fas fa-plus me-2"></i>
-                        İletişim Bilgisi Ekle
+                        <i class="fas fa-edit me-2"></i>
+                        Kişi Düzenle
                     </h4>
                 </div>
                 <div class="card-body">
-                    @if (contact != null)
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Yükleniyor...</span>
+                            </div>
+                            <p class="mt-2">Kişi bilgileri yükleniyor...</p>
+                        </div>
+                    }
+                    else if (contact != null)
                     {
                         <div class="alert alert-info mb-4">
-                            <strong>@contact.FirstName @contact.LastName</strong> için yeni iletişim bilgisi ekliyorsunuz.
+                            <strong>@contact.FirstName @contact.LastName</strong> kişisini düzenliyorsunuz.
                         </div>
 
-                        <EditForm Model="@communicationInfo" OnValidSubmit="HandleValidSubmit">
+                        <EditForm Model="@updateRequest" OnValidSubmit="HandleValidSubmit">
                             <DataAnnotationsValidator />
                             
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="type" class="form-label">İletişim Türü *</label>
-                                    <InputSelect id="type" class="form-select" @bind-Value="communicationInfo.Type">
-                                        <option value="">Seçiniz...</option>
-                                        <option value="@CommunicationType.Phone">📞 Telefon</option>
-                                        <option value="@CommunicationType.Email">📧 E-posta</option>
-                                        <option value="@CommunicationType.Location">📍 Lokasyon</option>
-                                    </InputSelect>
-                                    <ValidationMessage For="@(() => communicationInfo.Type)" />
+                                    <label for="firstName" class="form-label">Ad *</label>
+                                    <InputText id="firstName" class="form-control" @bind-Value="updateRequest.FirstName" />
+                                    <ValidationMessage For="@(() => updateRequest.FirstName)" />
                                 </div>
                                 
                                 <div class="col-md-6 mb-3">
-                                    <label for="value" class="form-label">Değer *</label>
-                                    <InputText id="value" class="form-control" @bind-Value="communicationInfo.Value" />
-                                    <ValidationMessage For="@(() => communicationInfo.Value)" />
+                                    <label for="lastName" class="form-label">Soyad *</label>
+                                    <InputText id="lastName" class="form-control" @bind-Value="updateRequest.LastName" />
+                                    <ValidationMessage For="@(() => updateRequest.LastName)" />
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="company" class="form-label">Şirket</label>
+                                    <InputText id="company" class="form-control" @bind-Value="updateRequest.Company" />
+                                    <ValidationMessage For="@(() => updateRequest.Company)" />
                                 </div>
                             </div>
                             
@@ -56,25 +67,16 @@
                                     @if (isSubmitting)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                        <span>Ekleniyor...</span>
+                                        <span>Güncelleniyor...</span>
                                     }
                                     else
                                     {
                                         <i class="fas fa-save me-2"></i>
-                                        <span>Ekle</span>
+                                        <span>Güncelle</span>
                                     }
                                 </button>
                             </div>
                         </EditForm>
-                    }
-                    else if (isLoading)
-                    {
-                        <div class="text-center">
-                            <div class="spinner-border" role="status">
-                                <span class="visually-hidden">Yükleniyor...</span>
-                            </div>
-                            <p class="mt-2">Kişi bilgileri yükleniyor...</p>
-                        </div>
                     }
                     else
                     {
@@ -96,7 +98,7 @@
     [Parameter]
     public Guid ContactId { get; set; }
 
-    private AddCommunicationInfoRequest communicationInfo = new();
+    private UpdateContactRequest updateRequest = new();
     private ContactDetailResponse? contact;
     private bool isLoading = true;
     private bool isSubmitting = false;
@@ -115,6 +117,12 @@
             if (result.Success && result.Data != null)
             {
                 contact = result.Data;
+                
+                // Mevcut verileri updateRequest'e kopyala
+                updateRequest.Id = contact.Id;
+                updateRequest.FirstName = contact.FirstName;
+                updateRequest.LastName = contact.LastName;
+                updateRequest.Company = contact.Company ?? string.Empty;
             }
             else
             {
@@ -139,18 +147,11 @@
         
         try
         {
-            var createRequest = new CreateCommunicationInfoRequest
-            {
-                ContactId = ContactId,
-                Type = communicationInfo.Type,
-                Value = communicationInfo.Value
-            };
-            
-            var result = await CommunicationInfoService.CreateCommunicationInfoAsync(createRequest);
+            var result = await ContactService.UpdateContactAsync(ContactId, updateRequest);
             
             if (result.Success)
             {
-                await JSRuntime.InvokeVoidAsync("alert", "İletişim bilgisi başarıyla eklendi!");
+                await JSRuntime.InvokeVoidAsync("alert", "Kişi başarıyla güncellendi!");
                 Navigation.NavigateTo($"/contacts/{ContactId}");
             }
             else

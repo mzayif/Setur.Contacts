@@ -1,6 +1,7 @@
 @page "/contacts/{ContactId:guid}"
 
 @inject IContactService ContactService
+@inject ICommunicationInfoService CommunicationInfoService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 
@@ -99,9 +100,14 @@
                                                     <span class="badge bg-primary me-2">@GetCommunicationTypeName(comm.Type)</span>
                                                     <span>@comm.Value</span>
                                                 </div>
-                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveCommunicationInfo(comm.Id)" title="Sil">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-warning" @onclick="() => EditCommunicationInfo(comm.Id)" title="Düzenle">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveCommunicationInfo(comm.Id)" title="Sil">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
                                             </div>
                                         }
                                     </div>
@@ -176,7 +182,7 @@
         {
             try
             {
-                var result = await ContactService.RemoveCommunicationInfoAsync(ContactId, communicationInfoId);
+                var result = await CommunicationInfoService.DeleteCommunicationInfoAsync(communicationInfoId);
                 if (result.Success)
                 {
                     await JSRuntime.InvokeVoidAsync("alert", "İletişim bilgisi silindi!");
@@ -197,6 +203,11 @@
     private void AddCommunication()
     {
         Navigation.NavigateTo($"/contacts/{ContactId}/add-communication");
+    }
+
+    private void EditCommunicationInfo(Guid communicationInfoId)
+    {
+        Navigation.NavigateTo($"/contacts/{ContactId}/communication/{communicationInfoId}/edit");
     }
 
     private void EditContact()

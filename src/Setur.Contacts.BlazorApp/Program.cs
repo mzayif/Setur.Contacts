@@ -13,6 +13,11 @@ builder.Services.AddHttpClient<IContactService, ContactService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
 });
 
+builder.Services.AddHttpClient<ICommunicationInfoService, CommunicationInfoService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
+});
+
 builder.Services.AddHttpClient<IReportService, ReportService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ReportApiBaseUrl"] ?? "http://localhost:7002/");

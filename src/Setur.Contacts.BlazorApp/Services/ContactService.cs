@@ -47,24 +47,5 @@ public class ContactService : IContactService
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi silindi");
     }
 
-    public async Task<SuccessResponse> AddCommunicationInfoAsync(Guid contactId, AddCommunicationInfoRequest request)
-    {
-        var createRequest = new CreateCommunicationInfoRequest
-        {
-            ContactId = contactId,
-            Type = request.Type,
-            Value = request.Value
-        };
-        
-        var response = await _httpClient.PostAsJsonAsync("api/CommunicationInfo", createRequest);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("İletişim bilgisi eklendi");
-    }
 
-    public async Task<SuccessResponse> RemoveCommunicationInfoAsync(Guid contactId, Guid communicationInfoId)
-    {
-        var response = await _httpClient.DeleteAsync($"api/CommunicationInfo/{contactId}/{communicationInfoId}");
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("İletişim bilgisi silindi");
-    }
 }
