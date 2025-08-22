@@ -56,6 +56,17 @@ public class CommunicationInfoService : ICommunicationInfoService
         if (contact == null)
             throw new NotFoundException("Kişi bulunamadı");
 
+        // Aynı kişi için aynı tip ve değerde iletişim bilgisi var mı kontrol et
+        var existingCommunicationInfo = await _communicationInfoRepository.GetWhere(
+            x => x.ContactId == request.ContactId && 
+                 x.Type == request.Type && 
+                 x.Value.ToLower() == request.Value.ToLower(), 
+            isTracking: false)
+            .FirstOrDefaultAsync();
+
+        if (existingCommunicationInfo != null)
+            throw new BusinessException("Bu iletişim bilgisi zaten mevcut");
+
         var communicationInfo = request.Adapt<CommunicationInfo>();
 
         await _communicationInfoRepository.AddAsync(communicationInfo);

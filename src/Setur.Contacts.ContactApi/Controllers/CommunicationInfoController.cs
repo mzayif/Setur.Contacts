@@ -47,6 +47,8 @@ public class CommunicationInfoController : ControllerBase
         return Ok(result);
     }
 
+
+
     // PUT: api/communication-info/{id}
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateCommunicationInfo(Guid id, UpdateCommunicationInfoRequest request)
