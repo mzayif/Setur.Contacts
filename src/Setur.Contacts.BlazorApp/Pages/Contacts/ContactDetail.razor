@@ -1,0 +1,233 @@
+@page "/contacts/{ContactId:guid}"
+
+@inject IContactService ContactService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Kişi Detayı - Setur Contacts</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-user me-2"></i>
+                    Kişi Detayı
+                </h2>
+                <div>
+                    <button class="btn btn-success me-2" @onclick="AddCommunication">
+                        <i class="fas fa-plus me-2"></i>
+                        İletişim Bilgisi Ekle
+                    </button>
+                    <button class="btn btn-warning me-2" @onclick="EditContact">
+                        <i class="fas fa-edit me-2"></i>
+                        Düzenle
+                    </button>
+                    <button class="btn btn-secondary" @onclick="GoToContacts">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kişi Listesi
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Yükleniyor...</span>
+                    </div>
+                    <p class="mt-2">Kişi bilgileri yükleniyor...</p>
+                </div>
+            }
+            else if (contact != null)
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-user me-2"></i>
+                                    Kişi Bilgileri
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Ad:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        @contact.FirstName
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Soyad:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        @contact.LastName
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Şirket:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        @contact.Company
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-address-book me-2"></i>
+                                    İletişim Bilgileri
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (contact.CommunicationInfos?.Any() == true)
+                                {
+                                    <div class="list-group">
+                                        @foreach (var comm in contact.CommunicationInfos)
+                                        {
+                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="me-2">@GetCommunicationTypeIcon(comm.Type)</span>
+                                                    <span class="badge bg-primary me-2">@GetCommunicationTypeName(comm.Type)</span>
+                                                    <span>@comm.Value</span>
+                                                </div>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveCommunicationInfo(comm.Id)" title="Sil">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-inbox fa-2x mb-3"></i>
+                                        <p>Henüz iletişim bilgisi eklenmemiş</p>
+                                        <button class="btn btn-primary" @onclick="AddCommunication">
+                                            <i class="fas fa-plus me-2"></i>
+                                            İlk İletişim Bilgisini Ekle
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                    <h5>Kişi bulunamadı!</h5>
+                    <p>Aradığınız kişi sistemde mevcut değil veya silinmiş olabilir.</p>
+                    <button class="btn btn-secondary" @onclick="GoToContacts">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Kişi Listesine Dön
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid ContactId { get; set; }
+
+    private ContactDetailResponse? contact;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadContact();
+    }
+
+    private async Task LoadContact()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await ContactService.GetContactByIdAsync(ContactId);
+            if (result.Success && result.Data != null)
+            {
+                contact = result.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Kişi yüklenirken hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RemoveCommunicationInfo(Guid communicationInfoId)
+    {
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Bu iletişim bilgisini silmek istediğinizden emin misiniz?"))
+        {
+            try
+            {
+                var result = await ContactService.RemoveCommunicationInfoAsync(ContactId, communicationInfoId);
+                if (result.Success)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "İletişim bilgisi silindi!");
+                    await LoadContact(); // Sayfayı yenile
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+            }
+        }
+    }
+
+    private void AddCommunication()
+    {
+        Navigation.NavigateTo($"/contacts/{ContactId}/add-communication");
+    }
+
+    private void EditContact()
+    {
+        Navigation.NavigateTo($"/contacts/{ContactId}/edit");
+    }
+
+    private void GoToContacts()
+    {
+        Navigation.NavigateTo("/contacts");
+    }
+
+    private string GetCommunicationTypeIcon(CommunicationType type)
+    {
+        return type switch
+        {
+            CommunicationType.Phone => "📞",
+            CommunicationType.Email => "📧",
+            CommunicationType.Location => "📍",
+            _ => "📋"
+        };
+    }
+
+    private string GetCommunicationTypeName(CommunicationType type)
+    {
+        return type switch
+        {
+            CommunicationType.Phone => "Telefon",
+            CommunicationType.Email => "E-posta",
+            CommunicationType.Location => "Lokasyon",
+            _ => "Bilinmeyen"
+        };
+    }
+}

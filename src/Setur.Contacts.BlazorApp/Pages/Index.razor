@@ -1,0 +1,90 @@
+@page "/"
+
+@inject IReportStatusService ReportStatusService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Setur Contacts - Ana Sayfa</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center">
+                <h1 class="display-4 mb-4">📞 Setur Kişi Yönetim Sistemi</h1>
+                <p class="lead mb-5">Kişi yönetimi ve raporlama işlemlerinizi kolayca gerçekleştirin</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title text-center mb-4">Hoş Geldiniz!</h5>
+                                <p class="card-text text-center">
+                                    Sol menüden istediğiniz işlemi seçerek başlayabilirsiniz:
+                                </p>
+                                <ul class="list-unstyled text-center">
+                                    <li><i class="fas fa-user-plus text-primary"></i> <strong>Kişi Ekleme:</strong> Yeni kişi bilgileri ekleyin</li>
+                                    <li><i class="fas fa-phone text-success"></i> <strong>Kişileri Görüntüle:</strong> Mevcut kişileri listeleyin ve düzenleyin</li>
+                                    <li><i class="fas fa-chart-bar text-info"></i> <strong>Raporlar:</strong> Çeşitli raporlar oluşturun</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isFirstRender = true;
+
+    protected override void OnInitialized()
+    {
+        // Rapor tamamlandığında bildirim al
+        ReportStatusService.ReportCompleted += OnReportCompleted;
+        ReportStatusService.ReportFailed += OnReportFailed;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isFirstRender = false;
+        }
+    }
+
+
+
+    private async void OnReportCompleted(ReportResponse report)
+    {
+        if (!_isFirstRender)
+        {
+            // JavaScript ile bildirim göster
+            var message = $"Rapor tamamlandı! Rapor ID: {report.Id}";
+            await InvokeAsync(async () =>
+            {
+                await JSRuntime.InvokeVoidAsync("alert", message);
+                StateHasChanged();
+            });
+        }
+    }
+
+    private async void OnReportFailed(string errorMessage)
+    {
+        if (!_isFirstRender)
+        {
+            // JavaScript ile hata bildirimi göster
+            await InvokeAsync(async () =>
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {errorMessage}");
+                StateHasChanged();
+            });
+        }
+    }
+
+    public void Dispose()
+    {
+        ReportStatusService.ReportCompleted -= OnReportCompleted;
+        ReportStatusService.ReportFailed -= OnReportFailed;
+    }
+}

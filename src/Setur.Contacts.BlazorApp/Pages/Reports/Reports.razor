@@ -1,0 +1,260 @@
+@page "/reports"
+
+@inject IReportService ReportService
+@inject IReportStatusService ReportStatusService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Raporlar - Setur Contacts</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="mb-4">
+                <h2>
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Raporlar
+                </h2>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-plus me-2"></i>
+                                Yeni Rapor Oluştur
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="locationFilter" class="form-label">Lokasyon Filtresi (virgülle ayırın)</label>
+                                <input type="text" id="locationFilter" class="form-control" @bind="locationFilter" placeholder="İstanbul, Ankara, İzmir" />
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="companyFilter" class="form-label">Şirket Filtresi (virgülle ayırın)</label>
+                                <input type="text" id="companyFilter" class="form-control" @bind="companyFilter" placeholder="Setur, ABC Şirketi" />
+                            </div>
+                            
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" @onclick="() => CreateReport(ReportType.LocationBased, locationFilter)">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Lokasyon Bazlı Rapor
+                                </button>
+                                
+                                <button class="btn btn-success" @onclick="() => CreateReport(ReportType.CompanyBased, companyFilter)">
+                                    <i class="fas fa-building me-2"></i>
+                                    Şirket Bazlı Rapor
+                                </button>
+                                
+                                <button class="btn btn-info" @onclick="() => CreateReport(ReportType.General, string.Empty)">
+                                    <i class="fas fa-chart-pie me-2"></i>
+                                    Genel İstatistik Raporu
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-list me-2"></i>
+                                Mevcut Raporlar
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if (isLoadingReports)
+                            {
+                                <div class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                    <p class="mt-2">Raporlar yükleniyor...</p>
+                                </div>
+                            }
+                            else if (reports.Any())
+                            {
+                                <div class="list-group">
+                                    @foreach (var report in reports)
+                                    {
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">Rapor #@report.Id.ToString().Substring(0, 8)</h6>
+                                                <small class="text-muted">@GetReportTypeName(report.Type)</small>
+                                            </div>
+                                            <div>
+                                                <span class="badge @GetStatusBadgeClass(report.Status) me-2">
+                                                    @GetStatusName(report.Status)
+                                                </span>
+                                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteReport(report.Id)" title="Sil">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-file-alt fa-2x mb-3"></i>
+                                    <p>Henüz rapor oluşturulmamış</p>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string locationFilter = string.Empty;
+    private string companyFilter = string.Empty;
+    private List<ReportListResponse> reports = new();
+    private bool isLoadingReports = true;
+    private bool _isFirstRender = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReports();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isFirstRender = false;
+        }
+    }
+
+    private async Task LoadReports()
+    {
+        isLoadingReports = true;
+        try
+        {
+            var result = await ReportService.GetAllReportsAsync();
+            if (result.Success)
+            {
+                reports = result.Data.ToList();
+            }
+            else if (!_isFirstRender)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (!_isFirstRender)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Raporlar yüklenirken hata oluştu: {ex.Message}");
+            }
+        }
+        finally
+        {
+            isLoadingReports = false;
+        }
+    }
+
+    private async Task CreateReport(ReportType reportType, string filters)
+    {
+        try
+        {
+            var request = new CreateReportRequest
+            {
+                ReportType = reportType,
+                Parameters = filters
+            };
+
+            var result = await ReportService.CreateReportAsync(request);
+            
+            if (result.Success)
+            {
+                if (!_isFirstRender)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Rapor oluşturuldu! İşlem arka planda devam ediyor.");
+                }
+                
+                // Rapor durumunu takip etmeye başla
+                await ReportStatusService.StartMonitoringReport(result.Data.Id);
+                
+                // Rapor listesini yenile
+                await LoadReports();
+            }
+            else if (!_isFirstRender)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            if (!_isFirstRender)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task DeleteReport(Guid reportId)
+    {
+        if (!_isFirstRender && await JSRuntime.InvokeAsync<bool>("confirm", "Bu raporu silmek istediğinizden emin misiniz?"))
+        {
+            try
+            {
+                var result = await ReportService.DeleteReportAsync(reportId);
+                if (result.Success)
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", "Rapor silindi!");
+                    await LoadReports();
+                }
+                else
+                {
+                    await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+            }
+        }
+    }
+
+
+
+    private string GetReportTypeName(ReportType reportType)
+    {
+        return reportType switch
+        {
+            ReportType.LocationBased => "Lokasyon Bazlı",
+            ReportType.CompanyBased => "Şirket Bazlı",
+            ReportType.General => "Genel İstatistik",
+            _ => "Bilinmeyen"
+        };
+    }
+
+    private string GetStatusName(ReportStatus status)
+    {
+        return status switch
+        {
+            ReportStatus.Preparing => "Hazırlanıyor",
+            ReportStatus.Completed => "Tamamlandı",
+            ReportStatus.Failed => "Başarısız",
+            _ => "Bilinmeyen"
+        };
+    }
+
+    private string GetStatusBadgeClass(ReportStatus status)
+    {
+        return status switch
+        {
+            ReportStatus.Preparing => "bg-warning",
+            ReportStatus.Completed => "bg-success",
+            ReportStatus.Failed => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

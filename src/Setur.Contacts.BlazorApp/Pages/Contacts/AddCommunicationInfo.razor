@@ -1,0 +1,172 @@
+@page "/contacts/{ContactId:guid}/add-communication"
+
+@inject IContactService ContactService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>İletişim Bilgisi Ekle - Setur Contacts</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-plus me-2"></i>
+                        İletişim Bilgisi Ekle
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (contact != null)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <strong>@contact.FirstName @contact.LastName</strong> için yeni iletişim bilgisi ekliyorsunuz.
+                        </div>
+
+                        <EditForm Model="@communicationInfo" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="type" class="form-label">İletişim Türü *</label>
+                                    <InputSelect id="type" class="form-select" @bind-Value="communicationInfo.Type">
+                                        <option value="">Seçiniz...</option>
+                                        <option value="@CommunicationType.Phone">📞 Telefon</option>
+                                        <option value="@CommunicationType.Email">📧 E-posta</option>
+                                        <option value="@CommunicationType.Location">📍 Lokasyon</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => communicationInfo.Type)" />
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="value" class="form-label">Değer *</label>
+                                    <InputText id="value" class="form-control" @bind-Value="communicationInfo.Value" />
+                                    <ValidationMessage For="@(() => communicationInfo.Value)" />
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary" @onclick="GoBack">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Geri
+                                </button>
+                                
+                                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Ekleniyor...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-save me-2"></i>
+                                        <span>Ekle</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    }
+                    else if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Yükleniyor...</span>
+                            </div>
+                            <p class="mt-2">Kişi bilgileri yükleniyor...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            Kişi bulunamadı!
+                        </div>
+                        <button class="btn btn-secondary" @onclick="GoToContacts">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Kişi Listesine Dön
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid ContactId { get; set; }
+
+    private AddCommunicationInfoRequest communicationInfo = new();
+    private ContactDetailResponse? contact;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadContact();
+    }
+
+    private async Task LoadContact()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await ContactService.GetContactByIdAsync(ContactId);
+            if (result.Success && result.Data != null)
+            {
+                contact = result.Data;
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "Kişi bulunamadı!");
+                Navigation.NavigateTo("/contacts");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Kişi yüklenirken hata oluştu: {ex.Message}");
+            Navigation.NavigateTo("/contacts");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        
+        try
+        {
+            var result = await ContactService.AddCommunicationInfoAsync(ContactId, communicationInfo);
+            
+            if (result.Success)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", "İletişim bilgisi başarıyla eklendi!");
+                Navigation.NavigateTo($"/contacts/{ContactId}");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Hata: {result.Message}");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Hata oluştu: {ex.Message}");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/contacts/{ContactId}");
+    }
+
+    private void GoToContacts()
+    {
+        Navigation.NavigateTo("/contacts");
+    }
+}
