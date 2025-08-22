@@ -1,6 +1,6 @@
 using Setur.Contacts.Domain.Enums;
 
-namespace Setur.Contacts.Domain.Models
+namespace Setur.Contacts.Domain.Responses
 {
     /// <summary>
     /// Rapor verisi - Tüm rapor türleri için ortak model

@@ -1,6 +1,4 @@
-using Setur.Contacts.ContactApi.DTOs.Responses;
-
-namespace Setur.Contacts.ContactApi.DTOs.Responses;
+namespace Setur.Contacts.Domain.Responses;
 
 public class ContactResponse
 {

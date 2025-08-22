@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Setur.Contacts.Domain.Enums;
 
-namespace Setur.Contacts.ReportApi.DTOs.Requests;
+namespace Setur.Contacts.Domain.Requests;
 
 public class CreateReportRequest
 {

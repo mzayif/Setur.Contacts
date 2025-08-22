@@ -1,4 +1,4 @@
-namespace Setur.Contacts.ReportApi.DTOs.Responses;
+namespace Setur.Contacts.Domain.Responses;
 
 public class ReportDetailResponse
 {

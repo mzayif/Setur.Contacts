@@ -1,6 +1,6 @@
 using Mapster;
 using Setur.Contacts.Domain.Entities;
-using Setur.Contacts.ReportApi.DTOs.Responses;
+using Setur.Contacts.Domain.Responses;
 
 namespace Setur.Contacts.ReportApi.Mappings;
 

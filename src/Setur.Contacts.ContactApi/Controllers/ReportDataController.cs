@@ -1,8 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Setur.Contacts.Base.Results;
-using Setur.Contacts.Domain.Models;
 using Setur.Contacts.ContactApi.Services;
 using Setur.Contacts.Domain.Enums;
+using Setur.Contacts.Domain.Responses;
 
 namespace Setur.Contacts.ContactApi.Controllers;
 

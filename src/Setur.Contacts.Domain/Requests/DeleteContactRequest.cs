@@ -1,7 +1,6 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace Setur.Contacts.ContactApi.DTOs.Requests;
+namespace Setur.Contacts.Domain.Requests;
 
 public class DeleteContactRequest
 {

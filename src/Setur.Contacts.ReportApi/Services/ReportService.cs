@@ -4,10 +4,10 @@ using Newtonsoft.Json;
 using Setur.Contacts.Base.Results;
 using Setur.Contacts.Domain.Entities;
 using Setur.Contacts.Domain.Enums;
+using Setur.Contacts.Domain.Requests;
+using Setur.Contacts.Domain.Responses;
 using Setur.Contacts.MessageBus.Models;
 using Setur.Contacts.MessageBus.Services;
-using Setur.Contacts.ReportApi.DTOs.Requests;
-using Setur.Contacts.ReportApi.DTOs.Responses;
 using Setur.Contacts.ReportApi.Repositories;
 
 namespace Setur.Contacts.ReportApi.Services;

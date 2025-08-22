@@ -1,6 +1,6 @@
 using Setur.Contacts.Domain.Enums;
 
-namespace Setur.Contacts.ReportApi.DTOs.Responses;
+namespace Setur.Contacts.Domain.Responses;
 
 /// <summary>
 /// Akıllı rapor response modeli - tüm durumları kapsar

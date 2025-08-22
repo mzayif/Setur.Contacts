@@ -1,13 +1,15 @@
 using Microsoft.EntityFrameworkCore;
 using Setur.Contacts.Base.Exceptions;
 using Setur.Contacts.Base.Results;
-using Setur.Contacts.ContactApi.DTOs.Requests;
-using Setur.Contacts.Domain.Models;
 using Setur.Contacts.ContactApi.Repositories;
 using Setur.Contacts.Domain.Entities;
 using Setur.Contacts.Domain.Enums;
 using Mapster;
-using Setur.Contacts.ContactApi.DTOs.Responses;
+using ContactDetailResponse = Setur.Contacts.Domain.Responses.ContactDetailResponse;
+using ContactResponse = Setur.Contacts.Domain.Responses.ContactResponse;
+using CreateContactRequest = Setur.Contacts.Domain.Requests.CreateContactRequest;
+using UpdateContactRequest = Setur.Contacts.Domain.Requests.UpdateContactRequest;
+using Setur.Contacts.Domain.Responses;
 
 namespace Setur.Contacts.ContactApi.Services;
 

@@ -6,7 +6,6 @@ using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Middleware;
 using Setur.Contacts.Base.Services;
 using Setur.Contacts.Domain.CommonModels;
-using Setur.Contacts.Domain.Models;
 using Setur.Contacts.MessageBus.Services;
 using Setur.Contacts.ReportApi.Data;
 using Setur.Contacts.ReportApi.Repositories;
@@ -19,6 +18,17 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Add Logger Service
 builder.Services.AddSingleton<ILoggerService, SerilogLoggerService>();
@@ -81,6 +91,9 @@ if (!app.Environment.IsProduction())
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
+// Use CORS
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

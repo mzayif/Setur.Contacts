@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Setur.Contacts.ReportApi.DTOs.Requests;
+using Setur.Contacts.Domain.Requests;
 using Setur.Contacts.ReportApi.Services;
 
 namespace Setur.Contacts.ReportApi.Controllers;

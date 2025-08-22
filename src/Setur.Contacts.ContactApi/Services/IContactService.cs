@@ -1,9 +1,11 @@
 using Setur.Contacts.Base.Results;
 using Setur.Contacts.Base.Exceptions;
-using Setur.Contacts.ContactApi.DTOs.Requests;
-using Setur.Contacts.ContactApi.DTOs.Responses;
 using Setur.Contacts.Domain.Enums;
-using Setur.Contacts.Domain.Models;
+using ContactDetailResponse = Setur.Contacts.Domain.Responses.ContactDetailResponse;
+using ContactResponse = Setur.Contacts.Domain.Responses.ContactResponse;
+using CreateContactRequest = Setur.Contacts.Domain.Requests.CreateContactRequest;
+using UpdateContactRequest = Setur.Contacts.Domain.Requests.UpdateContactRequest;
+using Setur.Contacts.Domain.Responses;
 
 namespace Setur.Contacts.ContactApi.Services;
 

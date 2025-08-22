@@ -1,7 +1,7 @@
 using Setur.Contacts.Base.Results;
 using Setur.Contacts.Base.Exceptions;
-using Setur.Contacts.ContactApi.DTOs.Requests;
-using Setur.Contacts.ContactApi.DTOs.Responses;
+using Setur.Contacts.Domain.Requests;
+using Setur.Contacts.Domain.Responses;
 
 namespace Setur.Contacts.ContactApi.Services;
 

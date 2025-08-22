@@ -1,6 +1,6 @@
 using Setur.Contacts.Domain.Enums;
 
-namespace Setur.Contacts.ContactApi.DTOs.Responses;
+namespace Setur.Contacts.Domain.Responses;
 
 public class CommunicationInfoResponse
 {
