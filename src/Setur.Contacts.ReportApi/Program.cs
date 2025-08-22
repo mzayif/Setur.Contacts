@@ -70,12 +70,17 @@ builder.Services.AddScoped<IReportProcessorService, ReportProcessorService>();
 builder.Services.AddScoped<IReportCacheService, RedisReportCacheService>();
 
 // Add Kafka Services
+builder.Services.AddSingleton<KafkaAdminService>();
 builder.Services.AddScoped<IKafkaProducerService, KafkaProducerService>();
 
 // Add Kafka Consumer as Background Service
 builder.Services.AddHostedService<KafkaConsumerService>();
 
 var app = builder.Build();
+
+// Startup log
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+logger.LogInformation("ReportApi uygulaması başlatılıyor...");
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsProduction())
@@ -98,5 +103,7 @@ app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+logger.LogInformation("ReportApi uygulaması başlatıldı ve dinlemeye hazır!");
 
 app.Run();

@@ -88,74 +88,75 @@ public class ReportProcessorService : IReportProcessorService
             ExpiresAt = DateTime.UtcNow.AddHours(24)
         };
 
-        try
+        var endpoint = reportType switch
         {
-            var endpoint = reportType switch
-            {
-                ReportType.LocationBased => "location",
-                ReportType.CompanyBased => "company",
-                ReportType.General => "general",
-                _ => "general"
-            };
+            ReportType.LocationBased => "location",
+            ReportType.CompanyBased => "company",
+            ReportType.General => "general",
+            _ => "general"
+        };
 
-            var url = $"{_contactApiBaseUrl}/api/ReportData/{endpoint}";
-            
-            // Parameters'dan filtreleri çıkar
-            var parametersObj = JsonConvert.DeserializeObject<ReportParameters>(parameters);
-            if (parametersObj?.Filters?.Any() == true && reportType != ReportType.General)
+        var url = $"{_contactApiBaseUrl}/api/ReportData/{endpoint}";
+
+        // Parameters'dan filtreleri çıkar
+        if (!string.IsNullOrEmpty(parameters) && reportType != ReportType.General)
+        {
+            var filters = parameters.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(f => f.Trim())
+                .Where(f => !string.IsNullOrEmpty(f))
+                .ToList();
+
+            if (filters.Any())
             {
-                var filterString = string.Join(",", parametersObj.Filters);
+                var filterString = string.Join(",", filters);
                 url += $"?{endpoint}s={Uri.EscapeDataString(filterString)}";
             }
+        }
 
-            var response = await _httpClient.GetAsync(url);
-            if (response.IsSuccessStatusCode)
+        _loggerService.LogInformation($"ContactApi'ye istek gönderiliyor: {url}");
+
+        var response = await _httpClient.GetAsync(url);
+        var responseData = await response.Content.ReadAsStringAsync();
+
+        _loggerService.LogInformation($"ContactApi yanıtı: Status={response.StatusCode}, Data={responseData}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<SuccessDataResult<ReportDataResponse>>(responseData);
+
+            if (result?.Data != null)
             {
-                var responseData = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<SuccessDataResult<ReportDataResponse>>(responseData);
-                
-                if (result?.Data != null)
+                reportData.Summary = JsonConvert.SerializeObject(new
                 {
-                    reportData.Summary = JsonConvert.SerializeObject(new
-                    {
-                        reportType = result.Data.ReportType.ToString(),
-                        filters = result.Data.Filters,
-                        totalPersonCount = result.Data.TotalPersonCount,
-                        totalPhoneCount = result.Data.TotalPhoneCount,
-                        totalEmailCount = result.Data.TotalEmailCount,
-                        totalLocationCount = result.Data.TotalLocationCount,
-                        topCompanies = result.Data.TopCompanies,
-                        topLocations = result.Data.TopLocations
-                    });
+                    reportType = result.Data.ReportType.ToString(),
+                    filters = result.Data.Filters,
+                    totalPersonCount = result.Data.TotalPersonCount,
+                    totalPhoneCount = result.Data.TotalPhoneCount,
+                    totalEmailCount = result.Data.TotalEmailCount,
+                    totalLocationCount = result.Data.TotalLocationCount,
+                    topCompanies = result.Data.TopCompanies,
+                    topLocations = result.Data.TopLocations
+                });
 
-                    reportData.Details = result.Data.Details.Select(d => new ReportDetailCacheData
-                    {
-                        Location = d.Location,
-                        PersonCount = d.PersonCount,
-                        PhoneCount = d.PhoneCount,
-                        EmailCount = d.EmailCount
-                    }).ToList();
-                }
+                reportData.Details = result.Data.Details.Select(d => new ReportDetailCacheData
+                {
+                    Location = d.Location,
+                    PersonCount = d.PersonCount,
+                    PhoneCount = d.PhoneCount,
+                    EmailCount = d.EmailCount
+                }).ToList();
+            }
+            else
+            {
+                throw new Exception("ContactApi'den boş veri döndü");
             }
         }
-        catch (Exception ex)
+        else
         {
-            _loggerService.LogError($"ContactApi'den veri çekme hatası: {ex.Message}");
-            
-            // Hata durumunda simüle edilmiş veri döndür
-            reportData.Summary = JsonConvert.SerializeObject(new { error = "Veri çekme hatası", message = ex.Message });
-            reportData.Details = new List<ReportDetailCacheData>
-            {
-                new() { Location = "Hata", PersonCount = 0, PhoneCount = 0, EmailCount = 0 }
-            };
+            throw new Exception($"ContactApi hatası: {response.StatusCode} - {responseData}");
         }
 
         return reportData;
-    }
-
-    private class ReportParameters
-    {
-        public List<string>? Filters { get; set; }
     }
 }
 

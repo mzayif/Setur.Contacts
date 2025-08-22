@@ -69,4 +69,14 @@ public class ReportController : ControllerBase
         var result = await _reportService.SaveReportPermanentlyAsync(reportId);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Başarısız raporu yeniden işlemeye gönderir
+    /// </summary>
+    [HttpPost("{reportId}/retry")]
+    public async Task<IActionResult> RetryReport(Guid reportId)
+    {
+        var result = await _reportService.RetryReportAsync(reportId);
+        return Ok(result);
+    }
 }

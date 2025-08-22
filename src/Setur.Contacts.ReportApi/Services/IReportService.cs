@@ -47,4 +47,11 @@ public interface IReportService
     /// <param name="reportId">Rapor ID'si</param>
     /// <returns>Kaydetme işlem sonucu</returns>
     Task<SuccessResponse> SaveReportPermanentlyAsync(Guid reportId);
+
+    /// <summary>
+    /// Başarısız raporu yeniden hazırlanmaya gönderir
+    /// </summary>
+    /// <param name="reportId">Rapor ID'si</param>
+    /// <returns>Yeniden işleme sonucu</returns>
+    Task<SuccessResponse> RetryReportAsync(Guid reportId);
 }
