@@ -147,67 +147,37 @@
     private async Task LoadReports()
     {
         isLoadingReports = true;
-        try
+        var result = await ReportService.GetAllReportsAsync();
+        if (result.Success)
         {
-            var result = await ReportService.GetAllReportsAsync();
-            if (result.Success)
-            {
-                reports = result.Data.ToList();
-            }
-            else if (!_isFirstRender)
-            {
-                ToastService.ShowError(result.Message, "Hata");
-            }
+            reports = result.Data.ToList();
         }
-        catch (Exception ex)
-        {
-            if (!_isFirstRender)
-            {
-                ToastService.ShowError($"Raporlar yüklenirken hata oluştu: {ex.Message}", "Hata");
-            }
-        }
-        finally
-        {
-            isLoadingReports = false;
-        }
+
+        isLoadingReports = false;
     }
 
     private async Task CreateReport(ReportType reportType, string filters)
     {
-        try
-        {
-            var request = new CreateReportRequest
-                {
-                    ReportType = reportType,
-                    Parameters = filters
-                };
-
-            var result = await ReportService.CreateReportAsync(request);
-
-            if (result.Success)
+        var request = new CreateReportRequest
             {
-                if (!_isFirstRender)
-                {
-                    ToastService.ShowSuccess("Rapor oluşturuldu! İşlem arka planda devam ediyor.", "Başarılı");
-                }
+                ReportType = reportType,
+                Parameters = filters
+            };
 
-                // Rapor durumunu takip etmeye başla
-                await ReportStatusService.StartMonitoringReport(Guid.Parse(result.ResponseId));
+        var result = await ReportService.CreateReportAsync(request);
 
-                // Rapor listesini yenile
-                await LoadReports();
-            }
-            else if (!_isFirstRender)
-            {
-                ToastService.ShowError(result.Message, "Hata");
-            }
-        }
-        catch (Exception ex)
+        if (result.Success)
         {
             if (!_isFirstRender)
             {
-                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+                ToastService.ShowSuccess("Rapor oluşturuldu! İşlem arka planda devam ediyor.", "Başarılı");
             }
+
+            // Rapor durumunu takip etmeye başla
+            await ReportStatusService.StartMonitoringReport(Guid.Parse(result.ResponseId));
+
+            // Rapor listesini yenile
+            await LoadReports();
         }
     }
 

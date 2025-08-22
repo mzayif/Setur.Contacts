@@ -35,21 +35,18 @@ public class CommunicationInfoService : ICommunicationInfoService
     public async Task<SuccessResponse> CreateCommunicationInfoAsync(CreateCommunicationInfoRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/CommunicationInfo", request);
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("İletişim bilgisi oluşturuldu");
     }
 
     public async Task<SuccessResponse> UpdateCommunicationInfoAsync(Guid id, UpdateCommunicationInfoRequest request)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/CommunicationInfo/{id}", request);
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("İletişim bilgisi güncellendi");
     }
 
     public async Task<SuccessResponse> DeleteCommunicationInfoAsync(Guid id)
     {
         var response = await _httpClient.DeleteAsync($"api/CommunicationInfo/{id}");
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("İletişim bilgisi silindi");
     }
 }

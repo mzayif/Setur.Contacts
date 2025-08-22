@@ -61,7 +61,7 @@ public class GlobalExceptionHandlerMiddleware
 
             case BusinessException businessEx:
                 response.StatusCode = (int)HttpStatusCode.BadRequest;
-                result = new ErrorResponse("BUSINES_ERROR", businessEx.Message);
+                result = new ErrorResponse(businessEx.ErrorCode, businessEx.Message);
                 break;
 
             case NotFoundException notFoundEx:

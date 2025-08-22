@@ -127,26 +127,12 @@
     private async Task LoadContacts()
     {
         isLoading = true;
-        try
+        var result = await ContactService.GetAllContactsAsync();
+        if (result.Success)
         {
-            var result = await ContactService.GetAllContactsAsync();
-            if (result.Success)
-            {
-                contacts = result.Data.ToList();
-            }
-            else
-            {
-                ToastService.ShowError(result.Message, "Hata");
-            }
+            contacts = result.Data.ToList();
         }
-        catch (Exception ex)
-        {
-            ToastService.ShowError($"Kişiler yüklenirken hata oluştu: {ex.Message}", "Hata");
-        }
-        finally
-        {
-            isLoading = false;
-        }
+        isLoading = false;
     }
 
     private void ViewContact(Guid contactId)

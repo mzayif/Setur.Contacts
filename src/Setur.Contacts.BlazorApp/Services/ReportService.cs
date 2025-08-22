@@ -17,7 +17,6 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> CreateReportAsync(CreateReportRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/Report", request);
-        response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor oluşturuldu");
         return result;
     }
@@ -37,7 +36,6 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> DeleteReportAsync(Guid id)
     {
         var response = await _httpClient.DeleteAsync($"api/Report/{id}");
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor silindi");
     }
 
@@ -50,7 +48,6 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> RetryReportAsync(Guid id)
     {
         var response = await _httpClient.PostAsync($"api/Report/{id}/retry", null);
-        response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor yeniden işlemeye gönderildi");
         return result;
     }
@@ -58,7 +55,6 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> SaveReportPermanentlyAsync(Guid id)
     {
         var response = await _httpClient.PostAsync($"api/Report/{id}/save-permanently", null);
-        response.EnsureSuccessStatusCode();
         var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor kalıcı olarak kaydedildi");
         return result;
     }

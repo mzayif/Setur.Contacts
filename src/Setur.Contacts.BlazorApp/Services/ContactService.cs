@@ -29,21 +29,18 @@ public class ContactService : IContactService
     public async Task<SuccessResponse> CreateContactAsync(CreateContactRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/Contact", request);
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi oluşturuldu");
     }
 
     public async Task<SuccessResponse> UpdateContactAsync(Guid id, UpdateContactRequest request)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/Contact/{id}", request);
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi güncellendi");
     }
 
     public async Task<SuccessResponse> DeleteContactAsync(Guid id)
     {
         var response = await _httpClient.DeleteAsync($"api/Contact/{id}");
-        response.EnsureSuccessStatusCode();
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi silindi");
     }
 

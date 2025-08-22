@@ -10,21 +10,27 @@ builder.Services.AddServerSideBlazor();
 // Toast servisi
 builder.Services.AddScoped<IToastService, ToastService>();
 
-// HttpClient ve Contact API servisleri
-builder.Services.AddHttpClient<IContactService, ContactService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
-});
+        // ErrorHandlingHttpMessageHandler'ı Scoped olarak ekle
+        builder.Services.AddScoped<ErrorHandlingHttpMessageHandler>();
 
-builder.Services.AddHttpClient<ICommunicationInfoService, CommunicationInfoService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
-});
+        // HttpClient ve Contact API servisleri
+        builder.Services.AddHttpClient<IContactService, ContactService>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
+        })
+        .AddHttpMessageHandler<ErrorHandlingHttpMessageHandler>();
 
-builder.Services.AddHttpClient<IReportService, ReportService>(client =>
-{
-    client.BaseAddress = new Uri(builder.Configuration["ReportApiBaseUrl"] ?? "http://localhost:7002/");
-});
+        builder.Services.AddHttpClient<ICommunicationInfoService, CommunicationInfoService>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
+        })
+        .AddHttpMessageHandler<ErrorHandlingHttpMessageHandler>();
+
+        builder.Services.AddHttpClient<IReportService, ReportService>(client =>
+        {
+            client.BaseAddress = new Uri(builder.Configuration["ReportApiBaseUrl"] ?? "http://localhost:7002/");
+        })
+        .AddHttpMessageHandler<ErrorHandlingHttpMessageHandler>();
 
 // Report Status Service (Singleton olarak ekle)
 builder.Services.AddSingleton<IReportStatusService, ReportStatusService>();
