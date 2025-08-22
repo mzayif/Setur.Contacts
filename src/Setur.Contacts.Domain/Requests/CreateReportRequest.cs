@@ -8,5 +8,5 @@ public class CreateReportRequest
     [Required(ErrorMessage = "Rapor türü seçilmelidir")]
     public ReportType ReportType { get; set; }
 
-    public object Parameters { get; set; } = new();
+    public string Parameters { get; set; } = string.Empty;
 }

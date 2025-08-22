@@ -11,7 +11,7 @@ public class ReportSmartResponse
     public ReportType ReportType { get; set; }
     public ReportStatus Status { get; set; }
     public DateTime RequestedAt { get; set; }
-    public object Parameters { get; set; } = new();
+    public string Parameters { get; set; } = string.Empty;
     public object Summary { get; set; } = new();
     public List<ReportDetailResponse> Details { get; set; } = new();
 
