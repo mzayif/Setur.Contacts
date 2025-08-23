@@ -149,16 +149,8 @@
         try
         {
             var result = await ContactService.UpdateContactAsync(ContactId, updateRequest);
-            
-            if (result.Success)
-            {
-                ToastService.ShowSuccess("Kişi başarıyla güncellendi!", "Başarılı");
-                Navigation.NavigateTo($"/contacts/{ContactId}");
-            }
-            else
-            {
-                ToastService.ShowError(result.Message, "Hata");
-            }
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            Navigation.NavigateTo($"/contacts/{ContactId}");
         }
         catch (Exception ex)
         {

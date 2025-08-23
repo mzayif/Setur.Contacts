@@ -184,15 +184,8 @@
             try
             {
                 var result = await CommunicationInfoService.DeleteCommunicationInfoAsync(communicationInfoId);
-                if (result.Success)
-                {
-                    ToastService.ShowSuccess("İletişim bilgisi silindi!", "Başarılı");
-                    await LoadContact(); // Sayfayı yenile
-                }
-                else
-                {
-                    ToastService.ShowError(result.Message, "Hata");
-                }
+                ToastService.ShowSuccess(result.Message, "Başarılı");
+                await LoadContact(); // Sayfayı yenile
             }
             catch (Exception ex)
             {

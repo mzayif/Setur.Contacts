@@ -158,19 +158,19 @@
 
     private async Task CreateReport(ReportType reportType, string filters)
     {
-        var request = new CreateReportRequest
-            {
-                ReportType = reportType,
-                Parameters = filters
-            };
-
-        var result = await ReportService.CreateReportAsync(request);
-
-        if (result.Success)
+        try
         {
+            var request = new CreateReportRequest
+                {
+                    ReportType = reportType,
+                    Parameters = filters
+                };
+
+            var result = await ReportService.CreateReportAsync(request);
+            
             if (!_isFirstRender)
             {
-                ToastService.ShowSuccess("Rapor oluşturuldu! İşlem arka planda devam ediyor.", "Başarılı");
+                ToastService.ShowSuccess(result.Message, "Başarılı");
             }
 
             // Rapor durumunu takip etmeye başla
@@ -178,6 +178,13 @@
 
             // Rapor listesini yenile
             await LoadReports();
+        }
+        catch (Exception ex)
+        {
+            if (!_isFirstRender)
+            {
+                ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+            }
         }
     }
 
@@ -188,15 +195,8 @@
             try
             {
                 var result = await ReportService.DeleteReportAsync(reportId);
-                if (result.Success)
-                {
-                    ToastService.ShowSuccess("Rapor silindi!", "Başarılı");
-                    await LoadReports();
-                }
-                else
-                {
-                    ToastService.ShowError(result.Message, "Hata");
-                }
+                ToastService.ShowSuccess(result.Message, "Başarılı");
+                await LoadReports();
             }
             catch (Exception ex)
             {
@@ -217,15 +217,8 @@
             try
             {
                 var result = await ReportService.RetryReportAsync(reportId);
-                if (result.Success)
-                {
-                    ToastService.ShowSuccess("Rapor yeniden işlemeye gönderildi!", "Başarılı");
-                    await LoadReports();
-                }
-                else
-                {
-                    ToastService.ShowError(result.Message, "Hata");
-                }
+                ToastService.ShowSuccess(result.Message, "Başarılı");
+                await LoadReports();
             }
             catch (Exception ex)
             {

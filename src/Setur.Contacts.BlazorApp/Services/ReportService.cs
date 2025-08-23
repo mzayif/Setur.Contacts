@@ -17,8 +17,7 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> CreateReportAsync(CreateReportRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/Report", request);
-        var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor oluşturuldu");
-        return result;
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
     public async Task<SuccessDataResult<ReportSmartResponse?>> GetReportByIdAsync(Guid id)
@@ -36,7 +35,7 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> DeleteReportAsync(Guid id)
     {
         var response = await _httpClient.DeleteAsync($"api/Report/{id}");
-        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor silindi");
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
     public async Task<SuccessDataResult<ReportDetailResponse?>> GetReportDetailsAsync(Guid id)
@@ -48,14 +47,12 @@ public class ReportService : IReportService
     public async Task<SuccessResponse> RetryReportAsync(Guid id)
     {
         var response = await _httpClient.PostAsync($"api/Report/{id}/retry", null);
-        var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor yeniden işlemeye gönderildi");
-        return result;
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
     public async Task<SuccessResponse> SaveReportPermanentlyAsync(Guid id)
     {
         var response = await _httpClient.PostAsync($"api/Report/{id}/save-permanently", null);
-        var result = await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Rapor kalıcı olarak kaydedildi");
-        return result;
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 }

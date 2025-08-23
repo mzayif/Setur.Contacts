@@ -29,19 +29,19 @@ public class ContactService : IContactService
     public async Task<SuccessResponse> CreateContactAsync(CreateContactRequest request)
     {
         var response = await _httpClient.PostAsJsonAsync("api/Contact", request);
-        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi oluşturuldu");
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
     public async Task<SuccessResponse> UpdateContactAsync(Guid id, UpdateContactRequest request)
     {
         var response = await _httpClient.PutAsJsonAsync($"api/Contact/{id}", request);
-        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi güncellendi");
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
     public async Task<SuccessResponse> DeleteContactAsync(Guid id)
     {
         var response = await _httpClient.DeleteAsync($"api/Contact/{id}");
-        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new SuccessResponse("Kişi silindi");
+        return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
 

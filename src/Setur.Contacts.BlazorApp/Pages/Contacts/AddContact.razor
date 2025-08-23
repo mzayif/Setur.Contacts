@@ -77,15 +77,20 @@
     {
         isSubmitting = true;
 
-        var result = await ContactService.CreateContactAsync(contact);
-
-        if (result.Success)
+        try
         {
-            ToastService.ShowSuccess("Kişi başarıyla eklendi!", "Başarılı");
-            Navigation.NavigateTo("/");
+            var result = await ContactService.CreateContactAsync(contact);
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            Navigation.NavigateTo("/contacts");
         }
-
-        isSubmitting = false;
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
     }
 
     private void GoBack()

@@ -291,15 +291,8 @@
         try
         {
             var result = await ReportService.RetryReportAsync(ReportId);
-            if (result.Success)
-            {
-                ToastService.ShowSuccess("Rapor yeniden işlemeye gönderildi!", "Başarılı");
-                await LoadReport(); // Raporu yenile
-            }
-            else
-            {
-                ToastService.ShowError(result.Message, "Hata");
-            }
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            await LoadReport(); // Raporu yenile
         }
         catch (Exception ex)
         {
@@ -319,15 +312,8 @@
         try
         {
             var result = await ReportService.SaveReportPermanentlyAsync(ReportId);
-            if (result.Success)
-            {
-                ToastService.ShowSuccess("Rapor kalıcı olarak kaydedildi!", "Başarılı");
-                await LoadReport(); // Raporu yenile
-            }
-            else
-            {
-                ToastService.ShowError(result.Message, "Hata");
-            }
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            await LoadReport(); // Raporu yenile
         }
         catch (Exception ex)
         {

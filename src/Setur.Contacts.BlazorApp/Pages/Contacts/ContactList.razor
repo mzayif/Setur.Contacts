@@ -157,15 +157,8 @@
             try
             {
                 var result = await ContactService.DeleteContactAsync(contactId);
-                if (result.Success)
-                {
-                    ToastService.ShowSuccess("Kişi silindi!", "Başarılı");
-                    await LoadContacts();
-                }
-                else
-                {
-                    ToastService.ShowError(result.Message, "Hata");
-                }
+                ToastService.ShowSuccess(result.Message, "Başarılı");
+                await LoadContacts();
             }
             catch (Exception ex)
             {

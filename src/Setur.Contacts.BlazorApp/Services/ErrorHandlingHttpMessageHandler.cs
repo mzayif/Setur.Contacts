@@ -32,44 +32,28 @@ public class ErrorHandlingHttpMessageHandler : DelegatingHandler
 
     private async Task HandleErrorResponseAsync(HttpResponseMessage response)
     {
-        try
+        // Response body'sini oku
+        var content = await response.Content.ReadAsStringAsync();
+
+        if (!string.IsNullOrEmpty(content))
         {
-            // Response body'sini oku
-            var content = await response.Content.ReadAsStringAsync();
-            
-            if (!string.IsNullOrEmpty(content))
+            // ErrorResponse modelini deserialize etmeye çalış
+            var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(content, new JsonSerializerOptions
             {
-                // ErrorResponse modelini deserialize etmeye çalış
-                try
-                {
-                    var errorResponse = JsonSerializer.Deserialize<ErrorResponse>(content, new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true
-                    });
+                PropertyNameCaseInsensitive = true
+            });
 
-                    if (errorResponse != null)
-                    {
-                        // ErrorResponse'dan mesajı al
-                        var errorMessage = GetErrorMessage(errorResponse);
-                        _toastService.ShowError(errorMessage, "Hata");
-                        return;
-                    }
-                }
-                catch (JsonException)
-                {
-                    // ErrorResponse deserialize edilemezse, genel hata mesajı göster
-                }
+            if (errorResponse != null)
+            {
+                // ErrorResponse'dan mesajı al
+                var errorMessage = GetErrorMessage(errorResponse);
+                throw new HttpRequestException(errorMessage);
             }
+        }
 
-            // ErrorResponse yoksa veya deserialize edilemezse, HTTP status code'a göre genel mesaj göster
-            var generalMessage = GetGeneralErrorMessage(response.StatusCode);
-            _toastService.ShowError(generalMessage, "Bağlantı Hatası");
-        }
-        catch (Exception ex)
-        {
-            // Hata durumunda genel mesaj göster
-            _toastService.ShowError("Beklenmeyen bir hata oluştu", "Hata");
-        }
+        // ErrorResponse yoksa veya deserialize edilemezse, HTTP status code'a göre genel mesaj göster
+        var generalMessage = GetGeneralErrorMessage(response.StatusCode);
+        throw new HttpRequestException(generalMessage);
     }
 
     private string GetErrorMessage(ErrorResponse errorResponse)
