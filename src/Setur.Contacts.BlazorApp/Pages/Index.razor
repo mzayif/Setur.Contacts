@@ -1,6 +1,7 @@
 @page "/"
 
-@inject IReportStatusService ReportStatusService
+
+@inject SignalRService SignalRService
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject IToastService ToastService
@@ -39,11 +40,13 @@
 @code {
     private bool _isFirstRender = true;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // Rapor tamamlandığında bildirim al
-        ReportStatusService.ReportCompleted += OnReportCompleted;
-        ReportStatusService.ReportFailed += OnReportFailed;
+        // SignalR bağlantısını başlat
+        await SignalRService.StartAsync();
+        
+        // SignalR ile rapor durumu güncellemelerini dinle
+        SignalRService.ReportStatusUpdated += OnReportStatusUpdated;
     }
 
     protected override void OnAfterRender(bool firstRender)
@@ -56,36 +59,36 @@
 
 
 
-    private async void OnReportCompleted(ReportSmartResponse report)
+    private void OnReportStatusUpdated(Guid reportId, ReportStatus status, string message)
     {
         if (!_isFirstRender)
         {
-            // Toast ile bildirim göster
-            var message = $"Rapor tamamlandı! Rapor ID: {report.ReportId}";
-            await InvokeAsync(async () =>
+            _ = InvokeAsync(() =>
             {
-                ToastService.ShowSuccess(message, "Rapor Tamamlandı");
+                switch (status)
+                {
+                    case ReportStatus.Preparing:
+                        ToastService.ShowInfo($"Rapor hazırlanıyor... ID: {reportId}", "Rapor Durumu");
+                        break;
+                    case ReportStatus.Completed:
+                        var successMessage = $"Raporunuz tamamlandı! <a href='/reports/{reportId}' class='text-white text-decoration-underline fw-bold ms-1' style='color:cadetblue !important; text-decoration: underline !important; font-weight: bold !important;'>📊 Raporu görüntüleyin</a>";
+                        ToastService.ShowInfo(successMessage, "Rapor Tamamlandı");
+                        break;
+                    case ReportStatus.Failed:
+                        ToastService.ShowError($"Rapor başarısız: {message}", "Rapor Hatası");
+                        break;
+                }
                 StateHasChanged();
+                return Task.CompletedTask;
             });
         }
     }
 
-    private async void OnReportFailed(string errorMessage)
-    {
-        if (!_isFirstRender)
-        {
-            // Toast ile hata bildirimi göster
-            await InvokeAsync(async () =>
-            {
-                ToastService.ShowError(errorMessage, "Rapor Hatası");
-                StateHasChanged();
-            });
-        }
-    }
 
-    public void Dispose()
+
+    public async ValueTask DisposeAsync()
     {
-        ReportStatusService.ReportCompleted -= OnReportCompleted;
-        ReportStatusService.ReportFailed -= OnReportFailed;
+        SignalRService.ReportStatusUpdated -= OnReportStatusUpdated;
+        await SignalRService.DisposeAsync();
     }
 }

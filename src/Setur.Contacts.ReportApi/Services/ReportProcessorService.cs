@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Results;
@@ -5,6 +6,7 @@ using Setur.Contacts.Domain.CommonModels;
 using Setur.Contacts.Domain.Enums;
 using Setur.Contacts.Domain.Responses;
 using Setur.Contacts.ReportApi.Data;
+using Setur.Contacts.ReportApi.Hubs;
 using Setur.Contacts.ReportApi.Repositories;
 
 namespace Setur.Contacts.ReportApi.Services;
@@ -17,6 +19,7 @@ public class ReportProcessorService : IReportProcessorService
     private readonly IReportCacheService _cacheService;
     private readonly HttpClient _httpClient;
     private readonly string _contactApiBaseUrl;
+    private readonly IHubContext<ReportHub> _hubContext;
 
     public ReportProcessorService(
         ReportRepository reportRepository,
@@ -24,7 +27,8 @@ public class ReportProcessorService : IReportProcessorService
         ILoggerService loggerService,
         IReportCacheService cacheService,
         HttpClient httpClient,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHubContext<ReportHub> hubContext)
     {
         _reportRepository = reportRepository;
         _context = context;
@@ -32,6 +36,7 @@ public class ReportProcessorService : IReportProcessorService
         _cacheService = cacheService;
         _httpClient = httpClient;
         _contactApiBaseUrl = configuration["ContactApiBaseUrl"] ?? "https://localhost:7001";
+        _hubContext = hubContext;
     }
 
     public async Task ProcessReportAsync(Guid reportId, ReportType reportType, string parameters)
@@ -50,6 +55,9 @@ public class ReportProcessorService : IReportProcessorService
 
             report.Status = ReportStatus.Preparing;
             await _reportRepository.SaveAsync();
+            
+            // SignalR ile "Hazırlanıyor" bildirimi gönder
+            //await _hubContext.Clients.All.SendAsync("ReportStatusUpdated", reportId, ReportStatus.Preparing, "Rapor hazırlanıyor...");
 
             // ContactApi'den gerçek veri çek
             var reportData = await GenerateReportDataFromContactApiAsync(reportType, parameters);
@@ -60,6 +68,9 @@ public class ReportProcessorService : IReportProcessorService
             // Raporu tamamla
             report.Status = ReportStatus.Completed;
             await _reportRepository.SaveAsync();
+            
+            // SignalR ile "Tamamlandı" bildirimi gönder
+            await _hubContext.Clients.All.SendAsync("ReportStatusUpdated", reportId, ReportStatus.Completed, "Rapor başarıyla tamamlandı!");
 
             _loggerService.LogInformation($"Rapor tamamlandı. ReportId: {reportId}");
         }
@@ -73,12 +84,18 @@ public class ReportProcessorService : IReportProcessorService
             {
                 report.Status = ReportStatus.Failed;
                 await _reportRepository.SaveAsync();
+                
+                // SignalR ile "Başarısız" bildirimi gönder
+                await _hubContext.Clients.All.SendAsync("ReportStatusUpdated", reportId, ReportStatus.Failed, $"Rapor oluşturulamadı: {ex.Message}");
             }
         }
     }
 
     private async Task<ReportCacheData> GenerateReportDataFromContactApiAsync(ReportType reportType, string parameters)
     {
+        // Rapor işleme simülasyonu için bekleme süresi
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        
         var reportData = new ReportCacheData
         {
             ReportId = Guid.NewGuid(),

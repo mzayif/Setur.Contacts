@@ -35,6 +35,9 @@ builder.Services.AddScoped<IToastService, ToastService>();
 // Report Status Service (Singleton olarak ekle)
 builder.Services.AddSingleton<IReportStatusService, ReportStatusService>();
 
+// SignalR Service (Singleton olarak ekle)
+builder.Services.AddSingleton<SignalRService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

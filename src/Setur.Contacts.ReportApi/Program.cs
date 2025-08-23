@@ -8,6 +8,7 @@ using Setur.Contacts.Base.Services;
 using Setur.Contacts.Domain.CommonModels;
 using Setur.Contacts.MessageBus.Services;
 using Setur.Contacts.ReportApi.Data;
+using Setur.Contacts.ReportApi.Hubs;
 using Setur.Contacts.ReportApi.Repositories;
 using Setur.Contacts.ReportApi.Services;
 using Setur.Contacts.ReportApi.Validators;
@@ -64,6 +65,9 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.InstanceName = redisSettings?.InstanceName ?? "SeturContacts:";
 });
 
+// Add SignalR
+builder.Services.AddSignalR();
+
 // Add Services
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IReportProcessorService, ReportProcessorService>();
@@ -103,6 +107,9 @@ app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+// Map SignalR Hub
+app.MapHub<ReportHub>("/reportHub");
 
 logger.LogInformation("ReportApi uygulaması başlatıldı ve dinlemeye hazır!");
 

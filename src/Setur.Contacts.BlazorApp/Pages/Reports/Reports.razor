@@ -1,7 +1,7 @@
 @page "/reports"
 
 @inject IReportService ReportService
-@inject IReportStatusService ReportStatusService
+
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject IToastService ToastService
@@ -148,7 +148,7 @@
     {
         isLoadingReports = true;
         var result = await ReportService.GetAllReportsAsync();
-        if (result.Success)
+        if (result.Success && result.Data != null)
         {
             reports = result.Data.ToList();
         }
@@ -172,9 +172,6 @@
             {
                 ToastService.ShowSuccess(result.Message, "Başarılı");
             }
-
-            // Rapor durumunu takip etmeye başla
-            await ReportStatusService.StartMonitoringReport(Guid.Parse(result.ResponseId));
 
             // Rapor listesini yenile
             await LoadReports();
@@ -250,6 +247,8 @@
             _ => "Bilinmeyen"
         };
     }
+
+
 
     private string GetStatusBadgeClass(ReportStatus status)
     {

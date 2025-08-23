@@ -55,20 +55,33 @@ function showToast(type, title, message) {
         </div>
     `;
 
+    // Toast içindeki linklere tıklandığında toast'u kapat
+    const links = toast.querySelectorAll('a');
+    links.forEach(link => {
+        link.addEventListener('click', function() {
+            // Toast'u kapat
+            if (toast.parentElement) {
+                toast.remove();
+            }
+        });
+    });
+
     // Toast'u container'a ekle
     toastContainer.appendChild(toast);
 
-    // 5 saniye sonra otomatik kaldır
-    setTimeout(() => {
-        if (toast.parentElement) {
-            toast.style.animation = 'slideOut 0.3s ease-in';
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.remove();
-                }
-            }, 300);
-        }
-    }, 5000);
+    // İnfo mesajları haricindekiler 5 saniye sonra otomatik kapanır.
+    if (type !== 'info') {
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.style.animation = 'slideOut 0.3s ease-in';
+                setTimeout(() => {
+                    if (toast.parentElement) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+    }
 }
 
 // CSS animasyonları

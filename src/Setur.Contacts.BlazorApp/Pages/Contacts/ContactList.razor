@@ -128,7 +128,7 @@
     {
         isLoading = true;
         var result = await ContactService.GetAllContactsAsync();
-        if (result.Success)
+        if (result.Success && result.Data != null)
         {
             contacts = result.Data.ToList();
         }
