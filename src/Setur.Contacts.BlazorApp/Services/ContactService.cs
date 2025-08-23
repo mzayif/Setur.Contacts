@@ -44,5 +44,9 @@ public class ContactService : IContactService
         return await response.Content.ReadFromJsonAsync<SuccessResponse>() ?? new ErrorResponse("Servis Hatası");
     }
 
-
+    public async Task<PagedResult<ContactResponse>> GetPagedAsync(int pageNumber = 1, int pageSize = 10)
+    {
+        var response = await _httpClient.GetAsync($"api/Contact/paged?pageNumber={pageNumber}&pageSize={pageSize}");
+        return await response.Content.ReadFromJsonAsync<PagedResult<ContactResponse>>() ?? new PagedResult<ContactResponse>(new List<ContactResponse>(), 0, pageNumber, pageSize, "Servis Hatası");
+    }
 }

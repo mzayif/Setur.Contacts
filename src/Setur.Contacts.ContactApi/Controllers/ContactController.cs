@@ -23,6 +23,20 @@ public class ContactController : ControllerBase
         return Ok(result);
     }
 
+    // GET: api/contacts/paged
+    [HttpGet("paged")]
+    public async Task<IActionResult> GetContactsPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        var request = new PagedRequest
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        var result = await _contactService.GetContactsPagedAsync(request);
+        return Ok(result);
+    }
+
     // GET: api/contacts/{id}
     [HttpGet("{id}")]
     public async Task<IActionResult> GetContact(Guid id)

@@ -12,4 +12,11 @@ public interface IContactService
     Task<SuccessResponse> UpdateContactAsync(Guid id, UpdateContactRequest request);
     Task<SuccessResponse> DeleteContactAsync(Guid id);
 
+    /// <summary>
+    /// Kişileri sayfalama ile getirir
+    /// </summary>
+    /// <param name="pageNumber">Sayfa numarası</param>
+    /// <param name="pageSize">Sayfa başına kayıt sayısı</param>
+    /// <returns>Sayfalanmış kişi listesi</returns>
+    Task<PagedResult<ContactResponse>> GetPagedAsync(int pageNumber = 1, int pageSize = 10);
 }
