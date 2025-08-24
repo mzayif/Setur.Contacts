@@ -13,6 +13,9 @@ using Mapster;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure port
+builder.WebHost.UseUrls("http://0.0.0.0:8080");
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -42,7 +45,8 @@ builder.Services.AddMapster();
 
 // Add DbContext
 builder.Services.AddDbContext<ContactDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ContactDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+                      builder.Configuration.GetConnectionString("ContactDb")));
 
 // Add Repositories
 builder.Services.AddScoped<ContactRepository>();

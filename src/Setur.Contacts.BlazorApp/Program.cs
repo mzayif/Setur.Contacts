@@ -3,6 +3,9 @@ using Setur.Contacts.BlazorApp.Services.Abstracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure port
+builder.WebHost.UseUrls("http://0.0.0.0:8080");
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
@@ -16,19 +19,25 @@ builder.Services.AddScoped<IToastService, ToastService>();
         // HttpClient ve Contact API servisleri
         builder.Services.AddHttpClient<IContactService, ContactService>(client =>
         {
-            client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
+            client.BaseAddress = new Uri(builder.Configuration["ContactApi:BaseUrl"] ?? 
+                                       builder.Configuration["ContactApiBaseUrl"] ?? 
+                                       "http://localhost:5001/");
         })
         .AddHttpMessageHandler<ErrorHandlingHttpMessageHandler>();
 
         builder.Services.AddHttpClient<ICommunicationInfoService, CommunicationInfoService>(client =>
         {
-            client.BaseAddress = new Uri(builder.Configuration["ContactApiBaseUrl"] ?? "http://localhost:7001/");
+            client.BaseAddress = new Uri(builder.Configuration["ContactApi:BaseUrl"] ?? 
+                                       builder.Configuration["ContactApiBaseUrl"] ?? 
+                                       "http://localhost:5001/");
         })
         .AddHttpMessageHandler<ErrorHandlingHttpMessageHandler>();
 
         builder.Services.AddHttpClient<IReportService, ReportService>(client =>
         {
-            client.BaseAddress = new Uri(builder.Configuration["ReportApiBaseUrl"] ?? "http://localhost:7002/");
+            client.BaseAddress = new Uri(builder.Configuration["ReportApi:BaseUrl"] ?? 
+                                       builder.Configuration["ReportApiBaseUrl"] ?? 
+                                       "http://localhost:5002/");
         })
         .AddHttpMessageHandler<ErrorHandlingHttpMessageHandler>();
 

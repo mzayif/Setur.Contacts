@@ -18,7 +18,9 @@ public class SignalRService : IAsyncDisposable
     public SignalRService(ILogger<SignalRService> logger, IConfiguration configuration)
     {
         _logger = logger;
-        _reportApiBaseUrl = configuration["ReportApiBaseUrl"] ?? "http://localhost:5079";
+        _reportApiBaseUrl = configuration["SignalR:ReportHubUrl"] ?? 
+                           configuration["ReportApiBaseUrl"] ?? 
+                           "http://localhost:5002";
     }
 
     /// <summary>
