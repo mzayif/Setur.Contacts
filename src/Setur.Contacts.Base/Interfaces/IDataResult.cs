@@ -6,5 +6,5 @@
 /// <typeparam name="T"></typeparam>
 public interface IDataResult<out T> : IResult
 {
-    T Data { get; }
+    T? Data { get; }
 }

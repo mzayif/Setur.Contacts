@@ -1,4 +1,4 @@
-namespace Setur.Contacts.Domain.Models
+namespace Setur.Contacts.Domain.CommonModels
 {
     public class RedisSettings
     {

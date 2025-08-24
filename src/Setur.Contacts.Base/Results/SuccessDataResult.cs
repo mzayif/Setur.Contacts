@@ -1,4 +1,5 @@
 ﻿using Setur.Contacts.Base.Interfaces;
+using System.Text.Json.Serialization;
 
 namespace Setur.Contacts.Base.Results;
 
@@ -8,8 +9,13 @@ namespace Setur.Contacts.Base.Results;
 /// <typeparam name="T">Geri döndürülecek response nesnesi</typeparam>
 public class SuccessDataResult<T> : SuccessResponse, IDataResult<T>
 {
-    public T Data { get; }
-    public int DataCount { get; }
+    public T? Data { get; set; }
+    public int DataCount { get; set; }
+
+    // JSON deserializasyon için parametresiz constructor
+    public SuccessDataResult() : base()
+    {
+    }
 
     public SuccessDataResult(T data) : base(true)
     {

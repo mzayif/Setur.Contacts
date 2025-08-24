@@ -1,0 +1,174 @@
+@page "/contacts/{ContactId:guid}/edit"
+
+@inject IContactService ContactService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IToastService ToastService
+
+<PageTitle>Kişi Düzenle - Setur Contacts</PageTitle>
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Kişi Düzenle
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Yükleniyor...</span>
+                            </div>
+                            <p class="mt-2">Kişi bilgileri yükleniyor...</p>
+                        </div>
+                    }
+                    else if (contact != null)
+                    {
+                        <div class="alert alert-info mb-4">
+                            <strong>@contact.FirstName @contact.LastName</strong> kişisini düzenliyorsunuz.
+                        </div>
+
+                        <EditForm Model="@updateRequest" OnValidSubmit="HandleValidSubmit">
+                            <DataAnnotationsValidator />
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="firstName" class="form-label">Ad *</label>
+                                    <InputText id="firstName" class="form-control" @bind-Value="updateRequest.FirstName" />
+                                    <ValidationMessage For="@(() => updateRequest.FirstName)" />
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="lastName" class="form-label">Soyad *</label>
+                                    <InputText id="lastName" class="form-control" @bind-Value="updateRequest.LastName" />
+                                    <ValidationMessage For="@(() => updateRequest.LastName)" />
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label for="company" class="form-label">Şirket</label>
+                                    <InputText id="company" class="form-control" @bind-Value="updateRequest.Company" />
+                                    <ValidationMessage For="@(() => updateRequest.Company)" />
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary" @onclick="GoBack">
+                                    <i class="fas fa-arrow-left me-2"></i>
+                                    Geri
+                                </button>
+                                
+                                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Güncelleniyor...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-save me-2"></i>
+                                        <span>Güncelle</span>
+                                    }
+                                </button>
+                            </div>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger">
+                            Kişi bulunamadı!
+                        </div>
+                        <button class="btn btn-secondary" @onclick="GoToContacts">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Kişi Listesine Dön
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid ContactId { get; set; }
+
+    private UpdateContactRequest updateRequest = new();
+    private ContactDetailResponse? contact;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadContact();
+    }
+
+    private async Task LoadContact()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await ContactService.GetContactByIdAsync(ContactId);
+            if (result.Success && result.Data != null)
+            {
+                contact = result.Data;
+                
+                // Mevcut verileri updateRequest'e kopyala
+                updateRequest.Id = contact.Id;
+                updateRequest.FirstName = contact.FirstName;
+                updateRequest.LastName = contact.LastName;
+                updateRequest.Company = contact.Company ?? string.Empty;
+            }
+            else
+            {
+                ToastService.ShowError("Kişi bulunamadı!", "Hata");
+                Navigation.NavigateTo("/contacts");
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Kişi yüklenirken hata oluştu: {ex.Message}", "Hata");
+            Navigation.NavigateTo("/contacts");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSubmitting = true;
+        
+        try
+        {
+            var result = await ContactService.UpdateContactAsync(ContactId, updateRequest);
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            Navigation.NavigateTo($"/contacts/{ContactId}");
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo($"/contacts/{ContactId}");
+    }
+
+    private void GoToContacts()
+    {
+        Navigation.NavigateTo("/contacts");
+    }
+}

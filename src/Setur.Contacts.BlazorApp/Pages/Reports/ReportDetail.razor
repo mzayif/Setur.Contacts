@@ -1,0 +1,365 @@
+@page "/reports/{ReportId:guid}"
+
+@inject IReportService ReportService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IToastService ToastService
+
+<PageTitle>Rapor Detayı - Setur Contacts</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Rapor Detayı
+                </h2>
+                <div>
+                    @if (report != null && report.Status == ReportStatus.Failed)
+                    {
+                        <button class="btn btn-warning me-2" @onclick="RetryReport" disabled="@isProcessing">
+                            <i class="fas fa-redo me-2"></i>
+                            Yeniden Dene
+                        </button>
+                    }
+                    @if (report != null && report.Status == ReportStatus.Completed && report.DataSource.Contains("Cache"))
+                    {
+                        <button class="btn btn-success me-2" @onclick="SavePermanently" disabled="@isProcessing">
+                            <i class="fas fa-save me-2"></i>
+                            Kalıcı Kaydet
+                        </button>
+                    }
+                    <button class="btn btn-secondary" @onclick="GoBack">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Geri
+                    </button>
+                </div>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Yükleniyor...</span>
+                    </div>
+                    <p class="mt-2">Rapor detayları yükleniyor...</p>
+                </div>
+            }
+            else if (report != null)
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Rapor Bilgileri
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Rapor ID:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <code>@report.ReportId</code>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Rapor Türü:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <span class="badge bg-primary">@GetReportTypeName(report.ReportType)</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Durum:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <span class="badge @GetStatusBadgeClass(report.Status)">@GetStatusName(report.Status)</span>
+                                    </div>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Oluşturulma:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        @report.RequestedAt.ToString("dd.MM.yyyy HH:mm:ss")
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(report.Parameters))
+                                {
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Parametreler:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            @report.Parameters
+                                        </div>
+                                    </div>
+                                }
+                                <div class="row mb-3">
+                                    <div class="col-sm-4">
+                                        <strong>Veri Kaynağı:</strong>
+                                    </div>
+                                    <div class="col-sm-8">
+                                        <small class="text-muted">@report.DataSource</small>
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(report.Message))
+                                {
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Mesaj:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            <div class="alert alert-info mb-0">
+                                                @report.Message
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-chart-pie me-2"></i>
+                                    Özet Bilgiler
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if (report.Status == ReportStatus.Completed && report.Details.Any())
+                                {
+                                    <div class="row text-center">
+                                        <div class="col-6 mb-3">
+                                            <div class="card bg-primary text-white">
+                                                <div class="card-body">
+                                                    <h4>@report.Details.Sum(d => d.PersonCount)</h4>
+                                                    <small>Toplam Kişi</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <div class="card bg-success text-white">
+                                                <div class="card-body">
+                                                    <h4>@report.Details.Sum(d => d.PhoneCount)</h4>
+                                                    <small>Toplam Telefon</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <div class="card bg-info text-white">
+                                                <div class="card-body">
+                                                    <h4>@report.Details.Sum(d => d.EmailCount)</h4>
+                                                    <small>Toplam E-posta</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6 mb-3">
+                                            <div class="card bg-warning text-white">
+                                                <div class="card-body">
+                                                    <h4>@report.Details.Count</h4>
+                                                    <small>Lokasyon Sayısı</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center text-muted">
+                                        <i class="fas fa-chart-bar fa-3x mb-3"></i>
+                                        <p>Rapor henüz tamamlanmamış veya veri bulunamadı.</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (report.Status == ReportStatus.Completed && report.Details.Any())
+                {
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="mb-0">
+                                        <i class="fas fa-list me-2"></i>
+                                        Detaylı Sonuçlar
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>Lokasyon</th>
+                                                    <th class="text-center">Kişi Sayısı</th>
+                                                    <th class="text-center">Telefon Sayısı</th>
+                                                    <th class="text-center">E-posta Sayısı</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var detail in report.Details)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <i class="fas fa-map-marker-alt me-2 text-danger"></i>
+                                                            @detail.Location
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="badge bg-primary">@detail.PersonCount</span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="badge bg-success">@detail.PhoneCount</span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            <span class="badge bg-info">@detail.EmailCount</span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="alert alert-danger">
+                    <h5>Rapor bulunamadı!</h5>
+                    <p>Aradığınız rapor sistemde mevcut değil veya silinmiş olabilir.</p>
+                    <button class="btn btn-secondary" @onclick="GoBack">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Geri Dön
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid ReportId { get; set; }
+
+    private ReportSmartResponse? report;
+    private bool isLoading = true;
+    private bool isProcessing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReport();
+    }
+
+    private async Task LoadReport()
+    {
+        isLoading = true;
+        try
+        {
+            var result = await ReportService.GetReportByIdAsync(ReportId);
+            if (result.Success && result.Data != null)
+            {
+                report = result.Data;
+            }
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Rapor yüklenirken hata oluştu: {ex.Message}", "Hata");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task RetryReport()
+    {
+        if (report == null) return;
+
+        isProcessing = true;
+        try
+        {
+            var result = await ReportService.RetryReportAsync(ReportId);
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            await LoadReport(); // Raporu yenile
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private async Task SavePermanently()
+    {
+        if (report == null) return;
+
+        isProcessing = true;
+        try
+        {
+            var result = await ReportService.SaveReportPermanentlyAsync(ReportId);
+            ToastService.ShowSuccess(result.Message, "Başarılı");
+            await LoadReport(); // Raporu yenile
+        }
+        catch (Exception ex)
+        {
+            ToastService.ShowError($"Hata oluştu: {ex.Message}", "Hata");
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/reports");
+    }
+
+    private string GetReportTypeName(ReportType reportType)
+    {
+        return reportType switch
+        {
+            ReportType.LocationBased => "Lokasyon Bazlı",
+            ReportType.CompanyBased => "Şirket Bazlı",
+            ReportType.General => "Genel İstatistik",
+            _ => "Bilinmeyen"
+        };
+    }
+
+    private string GetStatusName(ReportStatus status)
+    {
+        return status switch
+        {
+            ReportStatus.Preparing => "Hazırlanıyor",
+            ReportStatus.Completed => "Tamamlandı",
+            ReportStatus.Failed => "Başarısız",
+            _ => "Bilinmeyen"
+        };
+    }
+
+    private string GetStatusBadgeClass(ReportStatus status)
+    {
+        return status switch
+        {
+            ReportStatus.Preparing => "bg-warning",
+            ReportStatus.Completed => "bg-success",
+            ReportStatus.Failed => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}

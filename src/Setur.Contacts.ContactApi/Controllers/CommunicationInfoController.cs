@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Setur.Contacts.ContactApi.DTOs.Requests;
 using Setur.Contacts.ContactApi.Services;
+using Setur.Contacts.Domain.Requests;
 
 namespace Setur.Contacts.ContactApi.Controllers;
 
@@ -46,6 +46,8 @@ public class CommunicationInfoController : ControllerBase
         var result = await _communicationInfoService.CreateCommunicationInfoAsync(request);
         return Ok(result);
     }
+
+
 
     // PUT: api/communication-info/{id}
     [HttpPut("{id}")]

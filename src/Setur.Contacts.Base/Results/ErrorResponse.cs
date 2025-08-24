@@ -5,7 +5,7 @@
 /// </summary>
 public class ErrorResponse : SuccessResponse
 {
-    public List<string>? ErrorMessages;
+    public List<string>? ErrorMessages { get; set; }
 
     public ErrorResponse() : base(false)
     {

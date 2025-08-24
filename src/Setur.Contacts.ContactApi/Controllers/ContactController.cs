@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Setur.Contacts.ContactApi.DTOs.Requests;
 using Setur.Contacts.ContactApi.Services;
+using Setur.Contacts.Domain.Requests;
 
 namespace Setur.Contacts.ContactApi.Controllers;
 
@@ -20,6 +20,20 @@ public class ContactController : ControllerBase
     public async Task<IActionResult> GetContacts()
     {
         var result = await _contactService.GetAllContactsAsync();
+        return Ok(result);
+    }
+
+    // GET: api/contacts/paged
+    [HttpGet("paged")]
+    public async Task<IActionResult> GetContactsPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10)
+    {
+        var request = new PagedRequest
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize
+        };
+
+        var result = await _contactService.GetContactsPagedAsync(request);
         return Ok(result);
     }
 

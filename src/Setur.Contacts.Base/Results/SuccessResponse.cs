@@ -1,5 +1,5 @@
 ﻿using Setur.Contacts.Base.Interfaces;
-
+using System.Text.Json.Serialization;
 
 namespace Setur.Contacts.Base.Results;
 
@@ -8,9 +8,19 @@ namespace Setur.Contacts.Base.Results;
 /// </summary>
 public class SuccessResponse : IResult
 {
+    // JSON deserializasyon için parametresiz constructor
+    public SuccessResponse()
+    {
+        Success = true;
+        Message = "";
+        Code = "0";
+    }
+
     public SuccessResponse(bool success = true)
     {
         Success = success;
+        Message = "";
+        Code = "0";
     }
 
     public SuccessResponse(string message, bool success = true) : this(success)
@@ -23,7 +33,6 @@ public class SuccessResponse : IResult
         Code = code;
     }
 
-
     public SuccessResponse((string code, string message) messageWithCode, bool success = true) : this(messageWithCode.message, success)
     {
         Code = messageWithCode.code;
@@ -34,9 +43,8 @@ public class SuccessResponse : IResult
         ResponseId = responseId;
     }
 
-    public bool Success { get; } = true;
-    public string Message { get; } = "";
-    public string Code { get; } = "0";
+    public bool Success { get; set; } = true;
+    public string Message { get; set; } = "";
+    public string Code { get; set; } = "0";
     public string? ResponseId { get; set; }
-
 }
