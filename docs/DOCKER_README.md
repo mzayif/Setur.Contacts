@@ -57,6 +57,8 @@ docker-compose down -v
 ### Cache
 - **Redis 7**
 - **Port**: 6379
+- **Kullanım**: Rapor cache sistemi (24 saat TTL)
+- **Akıllı Getirme**: Cache → Database → Metadata sırasıyla kontrol
 
 ### Message Broker
 - **Apache Kafka 7.4.0**
@@ -227,6 +229,21 @@ Production ortamı için:
 
 - **Contact API Swagger**: http://localhost:5001
 - **Report API Swagger**: http://localhost:5002
+
+## 📊 Rapor Sistemi
+
+### Rapor İşleme Akışı
+1. **Rapor Oluşturma**: Kullanıcı rapor oluşturur
+2. **Asenkron İşleme**: Kafka üzerinden background service'e gönderilir
+3. **Veri İşleme**: Contact API'den kişi verileri çekilir
+4. **Cache Kaydetme**: Sonuçlar Redis'e 24 saat TTL ile kaydedilir
+5. **Bildirim**: SignalR ile kullanıcıya bildirim gönderilir
+
+### Rapor Görüntüleme Akışı
+1. **Cache Kontrolü**: Önce Redis'te rapor aranır
+2. **Database Kontrolü**: Cache'de yoksa veritabanında aranır
+3. **Metadata Kontrolü**: Son olarak rapor metadata'sı kontrol edilir
+4. **Kalıcı Kaydetme**: Kullanıcı isterse raporu kalıcı olarak kaydedebilir
 
 ## Test Verisi Oluşturma
 
