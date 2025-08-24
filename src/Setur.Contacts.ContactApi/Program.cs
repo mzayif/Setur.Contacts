@@ -13,10 +13,24 @@ using Mapster;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure port
+builder.WebHost.UseUrls("http://0.0.0.0:8080");
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOpenApi();
+
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
 
 // Add Logger Service
 builder.Services.AddSingleton<ILoggerService, SerilogLoggerService>();
@@ -31,7 +45,8 @@ builder.Services.AddMapster();
 
 // Add DbContext
 builder.Services.AddDbContext<ContactDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("ContactDb")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection") ?? 
+                      builder.Configuration.GetConnectionString("ContactDb")));
 
 // Add Repositories
 builder.Services.AddScoped<ContactRepository>();
@@ -57,6 +72,9 @@ if (!app.Environment.IsProduction())
 
 app.UseMiddleware<GlobalExceptionHandlerMiddleware>();
 app.UseMiddleware<RequestResponseLoggingMiddleware>();
+
+// Use CORS
+app.UseCors("AllowAll");
 
 app.UseHttpsRedirection();
 app.UseAuthorization();

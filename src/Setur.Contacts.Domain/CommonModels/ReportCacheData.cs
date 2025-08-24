@@ -1,6 +1,6 @@
 using Setur.Contacts.Domain.Enums;
 
-namespace Setur.Contacts.Domain.Models
+namespace Setur.Contacts.Domain.CommonModels
 {
     /// <summary>
     /// Redis cache'de saklanan rapor verisi

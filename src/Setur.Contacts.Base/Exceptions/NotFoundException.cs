@@ -11,8 +11,8 @@ public class NotFoundException : AppBaseException
     public string EntityName { get; }
 
     public NotFoundException(string entityName)
-        : base($"{entityName} bulunamadı", "NOT_FOUND")
+        : base("NOT_FOUND", $"{entityName}")
     {
         EntityName = entityName;
     }
-} 
+}

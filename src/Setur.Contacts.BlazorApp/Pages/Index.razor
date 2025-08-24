@@ -1,0 +1,94 @@
+@page "/"
+
+
+@inject SignalRService SignalRService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject IToastService ToastService
+
+<PageTitle>Setur Contacts - Ana Sayfa</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center">
+                <h1 class="display-4 mb-4">📞 Setur Kişi Yönetim Sistemi</h1>
+                <p class="lead mb-5">Kişi yönetimi ve raporlama işlemlerinizi kolayca gerçekleştirin</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title text-center mb-4">Hoş Geldiniz!</h5>
+                                <p class="card-text text-center">
+                                    Sol menüden istediğiniz işlemi seçerek başlayabilirsiniz:
+                                </p>
+                                <ul class="list-unstyled text-center">
+                                    <li><i class="fas fa-user-plus text-primary"></i> <strong>Kişi Ekleme:</strong> Yeni kişi bilgileri ekleyin</li>
+                                    <li><i class="fas fa-phone text-success"></i> <strong>Kişileri Görüntüle:</strong> Mevcut kişileri listeleyin ve düzenleyin</li>
+                                    <li><i class="fas fa-chart-bar text-info"></i> <strong>Raporlar:</strong> Çeşitli raporlar oluşturun</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool _isFirstRender = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // SignalR bağlantısını başlat
+        await SignalRService.StartAsync();
+        
+        // SignalR ile rapor durumu güncellemelerini dinle
+        SignalRService.ReportStatusUpdated += OnReportStatusUpdated;
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isFirstRender = false;
+        }
+    }
+
+
+
+    private void OnReportStatusUpdated(Guid reportId, ReportStatus status, string message)
+    {
+        if (!_isFirstRender)
+        {
+            _ = InvokeAsync(() =>
+            {
+                switch (status)
+                {
+                    case ReportStatus.Preparing:
+                        ToastService.ShowInfo($"Rapor hazırlanıyor... ID: {reportId}", "Rapor Durumu");
+                        break;
+                    case ReportStatus.Completed:
+                        var successMessage = $"Raporunuz tamamlandı! <a href='/reports/{reportId}' class='text-white text-decoration-underline fw-bold ms-1' style='color:cadetblue !important; text-decoration: underline !important; font-weight: bold !important;'>📊 Raporu görüntüleyin</a>";
+                        ToastService.ShowInfo(successMessage, "Rapor Tamamlandı");
+                        break;
+                    case ReportStatus.Failed:
+                        ToastService.ShowError($"Rapor başarısız: {message}", "Rapor Hatası");
+                        break;
+                }
+                StateHasChanged();
+                return Task.CompletedTask;
+            });
+        }
+    }
+
+
+
+    public async ValueTask DisposeAsync()
+    {
+        SignalRService.ReportStatusUpdated -= OnReportStatusUpdated;
+        await SignalRService.DisposeAsync();
+    }
+}

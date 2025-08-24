@@ -1,5 +1,5 @@
 using FluentValidation;
-using Setur.Contacts.ReportApi.DTOs.Requests;
+using Setur.Contacts.Domain.Requests;
 
 namespace Setur.Contacts.ReportApi.Validators;
 

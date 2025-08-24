@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Setur.Contacts.ReportApi.DTOs.Requests;
+using Setur.Contacts.Domain.Requests;
 using Setur.Contacts.ReportApi.Services;
 
 namespace Setur.Contacts.ReportApi.Controllers;
@@ -67,6 +67,16 @@ public class ReportController : ControllerBase
     public async Task<IActionResult> SaveReportPermanently(Guid reportId)
     {
         var result = await _reportService.SaveReportPermanentlyAsync(reportId);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Başarısız raporu yeniden işlemeye gönderir
+    /// </summary>
+    [HttpPost("{reportId}/retry")]
+    public async Task<IActionResult> RetryReport(Guid reportId)
+    {
+        var result = await _reportService.RetryReportAsync(reportId);
         return Ok(result);
     }
 }

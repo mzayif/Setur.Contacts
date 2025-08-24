@@ -9,21 +9,37 @@ using Setur.Contacts.MessageBus.Models;
 
 namespace Setur.Contacts.MessageBus.Services;
 
+/// <summary>
+/// <b>Kafka Consumer Service</b><br/>
+/// <br/>
+/// Bu servis, Kafka'dan gelen rapor işleme mesajlarını dinler ve işler. Background service olarak çalışır.<br/>
+/// <br/>
+/// İş Akışı:<br/>
+/// 1. Kafka topic'ine subscribe olur<br/>
+/// 2. Gelen mesajları sürekli dinler<br/>
+/// 3. Her mesajı JSON'dan deserialize eder<br/>
+/// 4. ReportProcessorService'i çağırarak rapor işleme sürecini başlatır<br/>
+/// 5. Mesaj işleme başarılı olduğunda commit eder<br/>
+/// <br/>
+/// </summary>
 public class KafkaConsumerService : BackgroundService
 {
     private readonly IConsumer<string, string> _consumer;
     private readonly ILogger<KafkaConsumerService> _logger;
     private readonly KafkaSettings _kafkaSettings;
     private readonly IServiceProvider _serviceProvider;
+    private readonly KafkaAdminService _kafkaAdminService;
 
     public KafkaConsumerService(
         IOptions<KafkaSettings> kafkaSettings,
         ILogger<KafkaConsumerService> logger,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider,
+        KafkaAdminService kafkaAdminService)
     {
         _kafkaSettings = kafkaSettings.Value;
         _logger = logger;
         _serviceProvider = serviceProvider;
+        _kafkaAdminService = kafkaAdminService;
 
         var config = new ConsumerConfig
         {
@@ -36,49 +52,65 @@ public class KafkaConsumerService : BackgroundService
         _consumer = new ConsumerBuilder<string, string>(config).Build();
     }
 
+    /// <summary>
+    /// Background service'in ana çalışma metodu. Kafka'dan mesaj dinlemeye başlar.
+    /// </summary>
+    /// <param name="stoppingToken">Servisin durdurulması için kullanılan cancellation token</param>
+    /// <returns>Task</returns>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Kafka Consumer Service başlatıldı. Topic: {Topic}", _kafkaSettings.TopicName);
-
-        _consumer.Subscribe(_kafkaSettings.TopicName);
-
         try
         {
-            while (!stoppingToken.IsCancellationRequested)
+            // Topic'in var olduğundan emin ol
+            await _kafkaAdminService.EnsureTopicExistsAsync();
+
+            _consumer.Subscribe(_kafkaSettings.TopicName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Kafka Consumer Service başlatılırken hata oluştu");
+            throw;
+        }
+
+        // Kafka consumer'ı ayrı bir task'te çalıştır
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                try
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    var consumeResult = _consumer.Consume(stoppingToken);
-
-                    _logger.LogInformation("Kafka'dan mesaj alındı. Key: {Key}, Topic: {Topic}, Partition: {Partition}, Offset: {Offset}",
-                        consumeResult.Message.Key, consumeResult.Topic, consumeResult.Partition, consumeResult.Offset);
-
-                    await ProcessMessageAsync(consumeResult.Message.Value);
-
-                    _consumer.Commit(consumeResult);
-                }
-                catch (ConsumeException ex)
-                {
-                    _logger.LogError(ex, "Kafka mesaj tüketme hatası");
-                }
-                catch (OperationCanceledException)
-                {
-                    break;
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Beklenmeyen hata");
+                    try
+                    {
+                        var consumeResult = _consumer.Consume(stoppingToken);
+                        await ProcessMessageAsync(consumeResult.Message.Value);
+                        _consumer.Commit(consumeResult);
+                    }
+                    catch (ConsumeException ex)
+                    {
+                        _logger.LogError(ex, "Kafka mesaj tüketme hatası");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Beklenmeyen hata");
+                    }
                 }
             }
-        }
-        finally
-        {
-            _consumer.Close();
-        }
-
-        _logger.LogInformation("Kafka Consumer Service durduruldu");
+            finally
+            {
+                _consumer.Close();
+            }
+        }, stoppingToken);
     }
 
+    /// <summary>
+    /// Kafka'dan gelen JSON mesajını işler ve rapor işleme sürecini başlatır.
+    /// </summary>
+    /// <param name="messageJson">Kafka'dan gelen JSON formatındaki mesaj</param>
+    /// <returns>Task</returns>
     private async Task ProcessMessageAsync(string messageJson)
     {
         try
@@ -91,7 +123,7 @@ public class KafkaConsumerService : BackgroundService
             }
 
             using var scope = _serviceProvider.CreateScope();
-            // ReportProcessorService'i dinamik olarak al
+            // Setur.Contacts.ReportApi üst uygulama olduğu için ReportProcessorService'i dinamik olarak alınır
             var reportProcessorType = Type.GetType("Setur.Contacts.ReportApi.Services.IReportProcessorService, Setur.Contacts.ReportApi");
             if (reportProcessorType != null)
             {
@@ -101,6 +133,7 @@ public class KafkaConsumerService : BackgroundService
                     var processMethod = reportProcessorType.GetMethod("ProcessReportAsync");
                     if (processMethod != null)
                     {
+                        //Raporu asıl işleyecek metodu dinamik olarak çalıştırır
                         await (Task)processMethod.Invoke(reportProcessor, new object[]
                         {
                             message.ReportId,
@@ -110,8 +143,6 @@ public class KafkaConsumerService : BackgroundService
                     }
                 }
             }
-
-            _logger.LogInformation("Mesaj başarıyla işlendi. ReportId: {ReportId}", message.ReportId);
         }
         catch (Exception ex)
         {

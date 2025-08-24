@@ -6,7 +6,7 @@ namespace Setur.Contacts.Base.Exceptions;
 public class BusinessException : AppBaseException
 {
     public BusinessException(string message, string errorCode = "BUSINESS_ERROR")
-        : base(message, errorCode)
+        : base(errorCode, message)
     {
     }
 } 

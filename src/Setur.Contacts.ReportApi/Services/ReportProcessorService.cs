@@ -1,9 +1,12 @@
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using Setur.Contacts.Base.Interfaces;
 using Setur.Contacts.Base.Results;
+using Setur.Contacts.Domain.CommonModels;
 using Setur.Contacts.Domain.Enums;
-using Setur.Contacts.Domain.Models;
+using Setur.Contacts.Domain.Responses;
 using Setur.Contacts.ReportApi.Data;
+using Setur.Contacts.ReportApi.Hubs;
 using Setur.Contacts.ReportApi.Repositories;
 
 namespace Setur.Contacts.ReportApi.Services;
@@ -16,6 +19,7 @@ public class ReportProcessorService : IReportProcessorService
     private readonly IReportCacheService _cacheService;
     private readonly HttpClient _httpClient;
     private readonly string _contactApiBaseUrl;
+    private readonly IHubContext<ReportHub> _hubContext;
 
     public ReportProcessorService(
         ReportRepository reportRepository,
@@ -23,7 +27,8 @@ public class ReportProcessorService : IReportProcessorService
         ILoggerService loggerService,
         IReportCacheService cacheService,
         HttpClient httpClient,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHubContext<ReportHub> hubContext)
     {
         _reportRepository = reportRepository;
         _context = context;
@@ -31,6 +36,7 @@ public class ReportProcessorService : IReportProcessorService
         _cacheService = cacheService;
         _httpClient = httpClient;
         _contactApiBaseUrl = configuration["ContactApiBaseUrl"] ?? "https://localhost:7001";
+        _hubContext = hubContext;
     }
 
     public async Task ProcessReportAsync(Guid reportId, ReportType reportType, string parameters)
@@ -49,6 +55,9 @@ public class ReportProcessorService : IReportProcessorService
 
             report.Status = ReportStatus.Preparing;
             await _reportRepository.SaveAsync();
+            
+            // SignalR ile "Hazırlanıyor" bildirimi gönder
+            //await _hubContext.Clients.All.SendAsync("ReportStatusUpdated", reportId, ReportStatus.Preparing, "Rapor hazırlanıyor...");
 
             // ContactApi'den gerçek veri çek
             var reportData = await GenerateReportDataFromContactApiAsync(reportType, parameters);
@@ -59,6 +68,9 @@ public class ReportProcessorService : IReportProcessorService
             // Raporu tamamla
             report.Status = ReportStatus.Completed;
             await _reportRepository.SaveAsync();
+            
+            // SignalR ile "Tamamlandı" bildirimi gönder
+            await _hubContext.Clients.All.SendAsync("ReportStatusUpdated", reportId, ReportStatus.Completed, "Rapor başarıyla tamamlandı!");
 
             _loggerService.LogInformation($"Rapor tamamlandı. ReportId: {reportId}");
         }
@@ -72,12 +84,18 @@ public class ReportProcessorService : IReportProcessorService
             {
                 report.Status = ReportStatus.Failed;
                 await _reportRepository.SaveAsync();
+                
+                // SignalR ile "Başarısız" bildirimi gönder
+                await _hubContext.Clients.All.SendAsync("ReportStatusUpdated", reportId, ReportStatus.Failed, $"Rapor oluşturulamadı: {ex.Message}");
             }
         }
     }
 
     private async Task<ReportCacheData> GenerateReportDataFromContactApiAsync(ReportType reportType, string parameters)
     {
+        // Rapor işleme simülasyonu için bekleme süresi
+        await Task.Delay(TimeSpan.FromSeconds(10));
+        
         var reportData = new ReportCacheData
         {
             ReportId = Guid.NewGuid(),
@@ -87,74 +105,75 @@ public class ReportProcessorService : IReportProcessorService
             ExpiresAt = DateTime.UtcNow.AddHours(24)
         };
 
-        try
+        var endpoint = reportType switch
         {
-            var endpoint = reportType switch
-            {
-                ReportType.LocationBased => "location",
-                ReportType.CompanyBased => "company",
-                ReportType.General => "general",
-                _ => "general"
-            };
+            ReportType.LocationBased => "location",
+            ReportType.CompanyBased => "company",
+            ReportType.General => "general",
+            _ => "general"
+        };
 
-            var url = $"{_contactApiBaseUrl}/api/ReportData/{endpoint}";
-            
-            // Parameters'dan filtreleri çıkar
-            var parametersObj = JsonConvert.DeserializeObject<ReportParameters>(parameters);
-            if (parametersObj?.Filters?.Any() == true && reportType != ReportType.General)
+        var url = $"{_contactApiBaseUrl}/api/ReportData/{endpoint}";
+
+        // Parameters'dan filtreleri çıkar
+        if (!string.IsNullOrEmpty(parameters) && reportType != ReportType.General)
+        {
+            var filters = parameters.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(f => f.Trim())
+                .Where(f => !string.IsNullOrEmpty(f))
+                .ToList();
+
+            if (filters.Any())
             {
-                var filterString = string.Join(",", parametersObj.Filters);
+                var filterString = string.Join(",", filters);
                 url += $"?{endpoint}s={Uri.EscapeDataString(filterString)}";
             }
+        }
 
-            var response = await _httpClient.GetAsync(url);
-            if (response.IsSuccessStatusCode)
+        _loggerService.LogInformation($"ContactApi'ye istek gönderiliyor: {url}");
+
+        var response = await _httpClient.GetAsync(url);
+        var responseData = await response.Content.ReadAsStringAsync();
+
+        _loggerService.LogInformation($"ContactApi yanıtı: Status={response.StatusCode}, Data={responseData}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            var result = JsonConvert.DeserializeObject<SuccessDataResult<ReportDataResponse>>(responseData);
+
+            if (result?.Data != null)
             {
-                var responseData = await response.Content.ReadAsStringAsync();
-                var result = JsonConvert.DeserializeObject<SuccessDataResult<ReportDataResponse>>(responseData);
-                
-                if (result?.Data != null)
+                reportData.Summary = JsonConvert.SerializeObject(new
                 {
-                    reportData.Summary = JsonConvert.SerializeObject(new
-                    {
-                        reportType = result.Data.ReportType.ToString(),
-                        filters = result.Data.Filters,
-                        totalPersonCount = result.Data.TotalPersonCount,
-                        totalPhoneCount = result.Data.TotalPhoneCount,
-                        totalEmailCount = result.Data.TotalEmailCount,
-                        totalLocationCount = result.Data.TotalLocationCount,
-                        topCompanies = result.Data.TopCompanies,
-                        topLocations = result.Data.TopLocations
-                    });
+                    reportType = result.Data.ReportType.ToString(),
+                    filters = result.Data.Filters,
+                    totalPersonCount = result.Data.TotalPersonCount,
+                    totalPhoneCount = result.Data.TotalPhoneCount,
+                    totalEmailCount = result.Data.TotalEmailCount,
+                    totalLocationCount = result.Data.TotalLocationCount,
+                    topCompanies = result.Data.TopCompanies,
+                    topLocations = result.Data.TopLocations
+                });
 
-                    reportData.Details = result.Data.Details.Select(d => new ReportDetailCacheData
-                    {
-                        Location = d.Location,
-                        PersonCount = d.PersonCount,
-                        PhoneCount = d.PhoneCount,
-                        EmailCount = d.EmailCount
-                    }).ToList();
-                }
+                reportData.Details = result.Data.Details.Select(d => new ReportDetailCacheData
+                {
+                    Location = d.Location,
+                    PersonCount = d.PersonCount,
+                    PhoneCount = d.PhoneCount,
+                    EmailCount = d.EmailCount
+                }).ToList();
+            }
+            else
+            {
+                throw new Exception("ContactApi'den boş veri döndü");
             }
         }
-        catch (Exception ex)
+        else
         {
-            _loggerService.LogError($"ContactApi'den veri çekme hatası: {ex.Message}");
-            
-            // Hata durumunda simüle edilmiş veri döndür
-            reportData.Summary = JsonConvert.SerializeObject(new { error = "Veri çekme hatası", message = ex.Message });
-            reportData.Details = new List<ReportDetailCacheData>
-            {
-                new() { Location = "Hata", PersonCount = 0, PhoneCount = 0, EmailCount = 0 }
-            };
+            throw new Exception($"ContactApi hatası: {response.StatusCode} - {responseData}");
         }
 
         return reportData;
-    }
-
-    private class ReportParameters
-    {
-        public List<string>? Filters { get; set; }
     }
 }
 

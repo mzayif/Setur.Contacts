@@ -12,13 +12,16 @@ public class KafkaProducerService : IKafkaProducerService
     private readonly IProducer<string, string> _producer;
     private readonly ILogger<KafkaProducerService> _logger;
     private readonly KafkaSettings _kafkaSettings;
+    private readonly KafkaAdminService _kafkaAdminService;
 
     public KafkaProducerService(
         IOptions<KafkaSettings> kafkaSettings,
-        ILogger<KafkaProducerService> logger)
+        ILogger<KafkaProducerService> logger,
+        KafkaAdminService kafkaAdminService)
     {
         _kafkaSettings = kafkaSettings.Value;
         _logger = logger;
+        _kafkaAdminService = kafkaAdminService;
 
         var config = new ProducerConfig
         {
@@ -33,6 +36,9 @@ public class KafkaProducerService : IKafkaProducerService
     {
         try
         {
+            // Topic'in var olduğundan emin ol
+            await _kafkaAdminService.EnsureTopicExistsAsync();
+
             var jsonMessage = JsonConvert.SerializeObject(message);
             var kafkaMessage = new Message<string, string>
             {

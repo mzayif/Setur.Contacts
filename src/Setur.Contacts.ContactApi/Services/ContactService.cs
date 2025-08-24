@@ -1,13 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Setur.Contacts.Base.Exceptions;
 using Setur.Contacts.Base.Results;
-using Setur.Contacts.ContactApi.DTOs.Requests;
-using Setur.Contacts.Domain.Models;
 using Setur.Contacts.ContactApi.Repositories;
 using Setur.Contacts.Domain.Entities;
 using Setur.Contacts.Domain.Enums;
 using Mapster;
-using Setur.Contacts.ContactApi.DTOs.Responses;
+using ContactDetailResponse = Setur.Contacts.Domain.Responses.ContactDetailResponse;
+using ContactResponse = Setur.Contacts.Domain.Responses.ContactResponse;
+using CreateContactRequest = Setur.Contacts.Domain.Requests.CreateContactRequest;
+using UpdateContactRequest = Setur.Contacts.Domain.Requests.UpdateContactRequest;
+using PagedRequest = Setur.Contacts.Domain.Requests.PagedRequest;
+using Setur.Contacts.Domain.Responses;
 
 namespace Setur.Contacts.ContactApi.Services;
 
@@ -93,7 +96,8 @@ public class ContactService : IContactService
         contactsQuery = reportType switch
         {
             ReportType.LocationBased => filters.Any()
-                ? contactsQuery.Where(c => c.CommunicationInfos != null && c.CommunicationInfos.Any(ci => 
+                ? contactsQuery
+                    .Where(c => c.CommunicationInfos != null && c.CommunicationInfos.Any(ci => 
                     ci.Type == CommunicationType.Location && 
                     filters.Any(f => ci.Value.ToLower() == f.ToLower())))
                 : contactsQuery,
@@ -158,5 +162,33 @@ public class ContactService : IContactService
             .ToList();
 
         return new SuccessDataResult<ReportDataResponse>(result,result.Details.Count);
+    }
+
+    public async Task<PagedResult<ContactResponse>> GetContactsPagedAsync(PagedRequest request)
+    {
+        // Toplam kayıt sayısını al
+        var totalCount = await _contactRepository.GetAll().CountAsync();
+
+        // Sayfalanmış verileri al
+        var contacts = await _contactRepository.GetWhere(includeProperties: "CommunicationInfos", isTracking: false)
+            .Skip(request.Skip)
+            .Take(request.Take)
+            .ToListAsync();
+
+        var contactResponses = contacts.Select(contact => new ContactResponse
+        {
+            Id = contact.Id,
+            FirstName = contact.FirstName,
+            LastName = contact.LastName,
+            Company = contact.Company,
+            CommunicationInfos = contact.CommunicationInfos?.Select(ci => new CommunicationInfoResponse
+            {
+                Id = ci.Id,
+                Type = ci.Type,
+                Value = ci.Value
+            }).ToList() ?? new List<CommunicationInfoResponse>()
+        }).ToList();
+
+        return new PagedResult<ContactResponse>(contactResponses, totalCount, request.PageNumber, request.PageSize);
     }
 }
