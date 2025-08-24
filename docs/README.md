@@ -26,6 +26,12 @@ Bu proje **Microservice Mimarisi** ile geliştirilmiştir ve aşağıdaki özell
 - Kullanıcı sayfa yenilemeden güncellemeleri görür
 - SignalR Hub ile WebSocket bağlantısı
 
+### 🗄️ Rapor Cache Yönetimi
+- **Redis Cache**: Rapor sonuçları 24 saat boyunca Redis'te saklanır
+- **Akıllı Getirme**: Rapor görüntülenirken Cache → Database → Metadata sırasıyla kontrol edilir
+- **Kalıcı Kaydetme**: Kullanıcı isterse raporu kalıcı olarak veritabanına kaydedebilir
+- **TTL Yönetimi**: 24 saat sonra cache otomatik temizlenir
+
 ## 📚 Dokümantasyon Listesi
 
 ### 🐳 Docker Kurulumu
@@ -93,7 +99,17 @@ Setur.Contacts/
 3. **Report API** → **Contact API** (HTTP - kişi verilerini çekme)
 4. **Report API** → **Kafka** (mesaj gönderme)
 5. **Kafka** → **Report API** (Background Service - mesaj işleme)
-6. **Report API** → **Blazor UI** (SignalR - real-time bildirimler)
+6. **Report API** → **Redis** (rapor sonuçlarını cache'e kaydetme)
+7. **Report API** → **Blazor UI** (SignalR - real-time bildirimler)
+
+### 📊 Rapor İşleme Akışı
+1. **Rapor Oluşturma**: Kullanıcı rapor oluşturur
+2. **Asenkron İşleme**: Kafka üzerinden background service'e gönderilir
+3. **Veri İşleme**: Contact API'den kişi verileri çekilir
+4. **Cache Kaydetme**: Sonuçlar Redis'e 24 saat TTL ile kaydedilir
+5. **Bildirim**: SignalR ile kullanıcıya bildirim gönderilir
+6. **Görüntüleme**: Cache → Database → Metadata sırasıyla kontrol edilir
+7. **Kalıcı Kaydetme**: Kullanıcı isterse veritabanına kalıcı kaydeder
 
 ## 🔧 Teknolojiler
 
@@ -105,7 +121,7 @@ Setur.Contacts/
 
 ### 🗄️ Veritabanı & Cache
 - **Veritabanı**: PostgreSQL (ayrı veritabanları)
-- **Cache**: Redis (geçici veri saklama)
+- **Cache**: Redis (rapor cache sistemi - 24 saat TTL)
 
 ### 📡 İletişim & Mesajlaşma
 - **Message Broker**: Apache Kafka (asenkron iletişim)

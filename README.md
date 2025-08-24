@@ -95,8 +95,10 @@ dotnet test tests/Setur.Contacts.Tests/
 
 ### Report API (Port: 5002)
 - `GET /api/Report` - Tüm raporları listele
+- `GET /api/Report/{id}` - Akıllı rapor getirme (Cache → DB → Metadata)
 - `POST /api/Report` - Yeni rapor oluştur
 - `DELETE /api/Report/{id}` - Rapor sil
+- `POST /api/Report/{reportId}/save-permanently` - Raporu kalıcı kaydet
 
 ## 🧪 Test Verisi Oluşturma
 
