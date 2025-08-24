@@ -96,7 +96,8 @@ public class ContactService : IContactService
         contactsQuery = reportType switch
         {
             ReportType.LocationBased => filters.Any()
-                ? contactsQuery.Where(c => c.CommunicationInfos != null && c.CommunicationInfos.Any(ci => 
+                ? contactsQuery
+                    .Where(c => c.CommunicationInfos != null && c.CommunicationInfos.Any(ci => 
                     ci.Type == CommunicationType.Location && 
                     filters.Any(f => ci.Value.ToLower() == f.ToLower())))
                 : contactsQuery,
